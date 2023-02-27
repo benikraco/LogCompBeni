@@ -62,7 +62,7 @@ class Parser:
         if tokens.next.type == "INT":
             result = int(tokens.next.value)
             tokens.selectNext()
-            while tokens.next.type == "PLUS" or tokens.next.type == "MINUS" or tokens.next.type == "SPACE":
+            while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
                 if tokens.next.type == "PLUS":
                     tokens.selectNext()
                     while tokens.next.type == "SPACE":
