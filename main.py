@@ -17,17 +17,24 @@ class Tokenizer:
         self.next = None
     
     def selectNext(self):
+        # skip spaces
         while self.position < len(self.source) and self.source[self.position] == ' ':
             self.position += 1
+        
+        # check if we are at the end of the input
         if self.position < len(self.source):
             if self.source[self.position] == "+":
                 self.next = Token("PLUS", self.source[self.position])
                 self.position += 1
                 return self.next
+            
+            # check for minus
             elif self.source[self.position] == "-":
                 self.next = Token("MINUS", self.source[self.position])
                 self.position += 1
                 return self.next
+            
+            # check for space
             elif self.source[self.position].isdigit():
                 int = ""
                 while self.position < len(self.source) and self.source[self.position].isdigit():
@@ -39,6 +46,7 @@ class Tokenizer:
                 self.next = Token("ERROR", self.source[self.position])
                 self.position += 1
                 return self.next
+        # if we are at the end of the input, return EOF    
         else:
             self.next = Token("EOF", "EOF")
             return self.next
@@ -53,15 +61,27 @@ class Parser:
         tokens.selectNext()
         result = 0
 
+        # skip spaces
         while tokens.next.type == "SPACE":
             tokens.selectNext()
 
+        
+        # check for error
         if tokens.next.type == "ERROR":
             raise Exception("Invalid")
         
+        # check for int
         if tokens.next.type == "INT":
             result = int(tokens.next.value)
             tokens.selectNext()
+
+            if tokens.next.type == "INT":
+                raise Exception("Invalid")
+
+            # skip spaces
+            while tokens.next.type == "SPACE":
+                tokens.selectNext()
+                
             while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
                 if tokens.next.type == "PLUS":
                     tokens.selectNext()
