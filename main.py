@@ -1,24 +1,24 @@
 import sys
 
+# join all command line arguments with spaces
 input_expression = " ".join(sys.argv[1:])
 
-#Create class Token
-class Token():
-
+# define the Token class
+class Token:
     def __init__(self, type, value):
         self.type = type
         self.value = value
 
-#Create class Tokenizer
-class Tokenizer():
-
+# define the Tokenizer class
+class Tokenizer:
     def __init__(self, source):
         self.source = source
         self.position = 0
         self.next = None
     
-    # Reads the next token from the source code and stores it in self.next
     def selectNext(self):
+        while self.position < len(self.source) and self.source[self.position] == ' ':
+            self.position += 1
         if self.position < len(self.source):
             if self.source[self.position] == "+":
                 self.next = Token("PLUS", self.source[self.position])
@@ -26,10 +26,6 @@ class Tokenizer():
                 return self.next
             elif self.source[self.position] == "-":
                 self.next = Token("MINUS", self.source[self.position])
-                self.position += 1
-                return self.next
-            elif self.source[self.position] == " ":
-                self.next = Token("SPACE", self.source[self.position])
                 self.position += 1
                 return self.next
             elif self.source[self.position].isdigit():
@@ -47,21 +43,18 @@ class Tokenizer():
             self.next = Token("EOF", "EOF")
             return self.next
 
-class Parser():
-
+# define the Parser class
+class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
     
-    # Consumes tokens and analyses the expression
     @staticmethod
     def parseExpression(tokens):
-
         tokens.selectNext()
         result = 0
 
-        if tokens.next.type == "SPACE":
-            while(tokens.next.type == "SPACE"):
-                tokens.selectNext()
+        while tokens.next.type == "SPACE":
+            tokens.selectNext()
 
         if tokens.next.type == "ERROR":
             raise Exception("Invalid")
@@ -72,42 +65,45 @@ class Parser():
             while tokens.next.type == "PLUS" or tokens.next.type == "MINUS" or tokens.next.type == "SPACE":
                 if tokens.next.type == "PLUS":
                     tokens.selectNext()
-                    if tokens.next.type == "SPACE":
-                        result+=0
-                    elif tokens.next.type == "INT":
+                    while tokens.next.type == "SPACE":
+                        tokens.selectNext()
+                    if tokens.next.type == "INT":
                         result += int(tokens.next.value)
+                        tokens.selectNext()
                     else:
                         raise Exception("Invalid")
 
                 elif tokens.next.type == "MINUS":
                     tokens.selectNext()
-                    if tokens.next.type == "SPACE":
-                        result-=0
-                    elif tokens.next.type == "INT":
+                    while tokens.next.type == "SPACE":
+                        tokens.selectNext()
+                    if tokens.next.type == "INT":
                         result -= int(tokens.next.value)
+                        tokens.selectNext()
                     else:
                         raise Exception("Invalid")
-
-                tokens.selectNext()
 
             if tokens.next.type == "EOF":
                 return result
             
         else:
             raise Exception("Invalid")
-
     
     @staticmethod
     def run(code):
         tokens = Tokenizer(code)
         parsed = Parser.parseExpression(tokens)
 
-        if parsed != None:
+        if parsed is not None:
             return parsed
 
-#Main function
+# define the main function
 def main():
-    Parser.run(input_expression)
-    print(Parser.run(input_expression))
+    try:
+        result = Parser.run(input_expression)
+        print(result)
+    except Exception as e:
+        print("Error:", e)
 
-main()
+if __name__ == "__main__":
+    main()
