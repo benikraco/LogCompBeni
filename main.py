@@ -68,7 +68,8 @@ class Parser:
         
         # check for error
         if tokens.next.type == "ERROR":
-            raise Exception("Invalid")
+            sys.stderr.write('[ERRO]\n')
+            sys.exit()
         
         # check for int
         if tokens.next.type == "INT":
@@ -76,7 +77,8 @@ class Parser:
             tokens.selectNext()
 
             if tokens.next.type == "INT":
-                raise Exception("Invalid")
+                sys.stderr.write('[ERRO]\n')
+                sys.exit()
 
             # skip spaces
             while tokens.next.type == "SPACE":
@@ -91,7 +93,8 @@ class Parser:
                         result += int(tokens.next.value)
                         tokens.selectNext()
                     else:
-                        raise Exception("Invalid")
+                        sys.stderr.write('[ERRO]\n')
+                        sys.exit()
 
                 elif tokens.next.type == "MINUS":
                     tokens.selectNext()
@@ -101,13 +104,15 @@ class Parser:
                         result -= int(tokens.next.value)
                         tokens.selectNext()
                     else:
-                        raise Exception("Invalid")
+                        sys.stderr.write('[ERRO]\n')
+                        sys.exit()
 
             if tokens.next.type == "EOF":
                 return result
             
         else:
-            raise Exception("Invalid")
+            sys.stderr.write('[ERRO]\n')
+            sys.exit()
     
     @staticmethod
     def run(code):
