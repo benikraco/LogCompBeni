@@ -1,4 +1,5 @@
 import sys
+import re
 
 # join all command line arguments with spaces
 input_expression = " ".join(sys.argv[1:])
@@ -8,6 +9,12 @@ class Token:
     def __init__(self, type, value):
         self.type = type
         self.value = value
+
+class PrePro():
+    @staticmethod
+    def filter(text):
+        filter = re.sub(r"/\*(.|\n)*?\*/", "", text)
+        return filter
 
 # define the Tokenizer class
 class Tokenizer:
@@ -77,11 +84,6 @@ class Parser:
     # parse multiplication and division
     def ParseTerm(tokens):
 
-        # skip spaces
-        while tokens.next.type == "SPACE":
-            tokens.selectNext()
-
-        # skip spaces
         tokens.selectNext()
         result = 0
 
@@ -102,6 +104,8 @@ class Parser:
             if tokens.next.type == "INT":
                 sys.stderr.write('[ERRO]\n')
                 sys.exit()
+            else:
+                pass
             
             # check for multiplication or division
             while tokens.next.type == "MULT" or tokens.next.type == "DIV":
@@ -109,33 +113,23 @@ class Parser:
                 # check for multiplication
                 if tokens.next.type == "MULT":
                     tokens.selectNext()
-                    while tokens.next.type == "SPACE":
-                        tokens.selectNext()
+
                     if tokens.next.type == "INT":
                         result *= int(tokens.next.value)
-                        tokens.selectNext()
                     else:
                         sys.stderr.write('[ERRO]\n')
                         sys.exit()
                 
-                # check for division
                 elif tokens.next.type == "DIV":
                     tokens.selectNext()
-                    while tokens.next.type == "SPACE":
-                        tokens.selectNext()
+
                     if tokens.next.type == "INT":
                         result /= int(tokens.next.value)
-                        tokens.selectNext()
                     else:
                         sys.stderr.write('[ERRO]\n')
                         sys.exit()
 
-                if tokens.next.type == "EOF":
-                    return result
-                    
-                else:
-                    sys.stderr.write('[ERRO]\n')
-                    sys.exit()
+                tokens.selectNext()
 
             return int(result)
         
@@ -168,13 +162,12 @@ class Parser:
 
         if parsed is not None:
             return parsed
-                
-                
-
+    
 # define the main function
 def main():
-    result = int(Parser.run((input_expression)))
-    print(result)
+    result = (PrePro.filter(input_expression))
+    res = Parser.run(result)
+    print(res)
 
 if __name__ == "__main__":
     main()
