@@ -11,10 +11,13 @@ class Token:
 
 # define the Tokenizer class
 class Tokenizer:
-    def __init__(self, source):
+    def __init__(self, source, next):
         self.source = source
         self.position = 0
-        self.next = None
+        if next == None:
+            self.next = Token("int", 0)
+        else:
+            self.next = Token(self.next.type, self.next.value)
     
     def selectNext(self):
         # skip spaces
@@ -138,9 +141,9 @@ class Parser:
 
         while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
-                result += Parser.ParseTerm(tokens)
+                result += int(Parser.ParseTerm(tokens))
             elif tokens.next.type == "MINUS":
-                result -= Parser.ParseTerm(tokens)
+                result -= int(Parser.ParseTerm(tokens))
         
         tokens.selectNext()
         if tokens.next.type == "EOF":
@@ -148,37 +151,17 @@ class Parser:
     
     @staticmethod
     def run(code):
-        tokens = Tokenizer(code)
+        tokens = Tokenizer(code, None)
         parsed = Parser.parseExpression(tokens)
 
         if parsed is not None:
             return parsed
-        
-class PrePro:
-    @staticmethod
-
-    # filter the input excluding comments
-    def filter(text):
-        comment = False
-        filtered = ""
-
-        for i in range(len(text)):
-            if text[i] == "/" and text[i + 1] == "/":
-                if i>2:
-                    filtered = filtered[:i-2]
-                else:
-                    filtered = filtered[:i-1]
-                comment = True
-                break
-            if not comment:
-                filtered += text[i]
-        
-        return filtered
-
+                
+                
 
 # define the main function
 def main():
-    result = Parser.run(PrePro.filter(input_expression))
+    result = Parser.run((input_expression))
     print(result)
 
 if __name__ == "__main__":
