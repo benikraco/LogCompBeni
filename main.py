@@ -13,7 +13,7 @@ class Token:
 class PrePro():
     @staticmethod
     def filter(text):
-        filter = re.sub(r"/\*(.|\n)*?\*/", "", text)
+        filter = re.sub(r'#.*', '', text)
         return filter
 
 # define the Tokenizer class
