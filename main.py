@@ -16,7 +16,7 @@ class Tokenizer:
         self.position = 0
         if next == None:
             self.next = Token("int", 0)
-        else:
+        else: 
             self.next = Token(self.next.type, self.next.value)
     
     def selectNext(self):
@@ -78,6 +78,10 @@ class Parser:
     def ParseTerm(tokens):
 
         # skip spaces
+        while tokens.next.type == "SPACE":
+            tokens.selectNext()
+
+        # skip spaces
         tokens.selectNext()
         result = 0
 
@@ -94,6 +98,10 @@ class Parser:
         if tokens.next.type == "INT":
             result = int(tokens.next.value)
             tokens.selectNext()
+
+            if tokens.next.type == "INT":
+                sys.stderr.write('[ERRO]\n')
+                sys.exit()
             
             # check for multiplication or division
             while tokens.next.type == "MULT" or tokens.next.type == "DIV":
@@ -129,7 +137,7 @@ class Parser:
                     sys.stderr.write('[ERRO]\n')
                     sys.exit()
 
-            return result
+            return int(result)
         
         else:
             sys.stderr.write('[ERRO]\n')
@@ -139,6 +147,10 @@ class Parser:
     def parseExpression(tokens):
         result = Parser.ParseTerm(tokens)
 
+        # skip spaces
+        while tokens.next.type == "SPACE":
+            tokens.selectNext()
+
         while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
                 result += int(Parser.ParseTerm(tokens))
@@ -147,7 +159,7 @@ class Parser:
         
         tokens.selectNext()
         if tokens.next.type == "EOF":
-            return result
+            return int(result)
     
     @staticmethod
     def run(code):
@@ -161,7 +173,7 @@ class Parser:
 
 # define the main function
 def main():
-    result = Parser.run((input_expression))
+    result = int(Parser.run((input_expression)))
     print(result)
 
 if __name__ == "__main__":
