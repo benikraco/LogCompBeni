@@ -33,6 +33,8 @@ class Tokenizer:
         
         # check if we are at the end of the input
         if self.position < len(self.source):
+
+            # check for plus
             if self.source[self.position] == "+":
                 self.next = Token("PLUS", self.source[self.position])
                 self.position += 1
@@ -55,6 +57,19 @@ class Tokenizer:
                 self.next = Token("DIV", self.source[self.position])
                 self.position += 1
                 return self.next
+            
+            # check for parenthesis
+            elif self.source[self.position] == "(":
+                self.next = Token("PAR_OPEN", self.source[self.position])
+                self.position += 1
+                return self.next
+            
+            # check for parenthesis
+            elif self.source[self.position] == ")":
+                self.next = Token("PAR_CLOSE", self.source[self.position])
+                self.position += 1
+                return self.next
+            
             
             # check for space
             elif self.source[self.position].isdigit():
@@ -154,6 +169,36 @@ class Parser:
         tokens.selectNext()
         if tokens.next.type == "EOF":
             return int(result)
+        
+
+
+    @staticmethod
+    def parseFactor(tokens):
+        if tokens.next.type == "PLUS":
+            tokens.selectNext()
+            result = Parser.parseFactor(tokens)
+        
+        elif tokens.next.type == "MINUS":
+            tokens.selectNext()
+            result = -Parser.parseFactor(tokens)
+        
+        elif tokens.next.type == "PAR_OPEN":
+            tokens.selectNext()
+            result = Parser.parseExpression(tokens)
+            if tokens.next.type != "PAR_CLOSE":
+                sys.stderr.write('[ERRO]\n')
+                sys.exit()
+            tokens.selectNext()
+        
+        elif tokens.next.type == "INT":
+            result = int(tokens.next.value)
+            tokens.selectNext()
+
+        else:
+            sys.stderr.write('[ERRO]\n')
+            sys.exit()
+        
+        return result
     
     @staticmethod
     def run(code):

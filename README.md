@@ -12,5 +12,6 @@
 
 ```python
 EXPRESSION = TERM, { ("+" | "-"), TERM };
-TERM = NUMBER, { ("*" | "/"), NUMBER };
+TERM = FACTOR, { ("*" | "/"), FACTOR };
+FACTOR = ("+" | "-") FACTOR | "(" EXPRESSION ")" | number ;
 ```
