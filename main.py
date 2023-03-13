@@ -22,191 +22,186 @@ class Tokenizer:
         self.source = source
         self.position = 0
         if next == None:
-            self.next = Token("int", 0)
+            self.next = Token("INT", 0)
         else: 
             self.next = Token(self.next.type, self.next.value)
     
     def selectNext(self):
-        # skip spaces
-        while self.position < len(self.source) and self.source[self.position] == ' ':
-            self.position += 1
-        
-        # check if we are at the end of the input
-        if self.position < len(self.source):
+        token_incomplete=True
+        num=""
 
-            # check for plus
+        while self.position < len(self.source) and self.source[self.position] == " ":
+            self.position+=1
+
+        if self.position < len(self.source): #esse é o EOF 
+            
             if self.source[self.position] == "+":
                 self.next = Token("PLUS", self.source[self.position])
+
                 self.position += 1
-                return self.next
-            
-            # check for minus
-            elif self.source[self.position] == "-":
-                self.next = Token("MINUS", self.source[self.position])
-                self.position += 1
-                return self.next
-            
-            # check for multiplication
-            elif self.source[self.position] == "*":
-                self.next = Token("MULT", self.source[self.position])
-                self.position += 1
+
                 return self.next
 
-            # check for division
+            elif self.source[self.position] == "-":
+                self.next = Token("MINUS", self.source[self.position])
+
+                self.position += 1
+
+                return self.next
+
+            elif self.source[self.position] == "*":
+                self.next = Token("MULT", self.source[self.position])
+
+                self.position += 1
+
+                return self.next
+            
             elif self.source[self.position] == "/":
                 self.next = Token("DIV", self.source[self.position])
+
                 self.position += 1
+
                 return self.next
-            
-            # check for parenthesis
+
             elif self.source[self.position] == "(":
                 self.next = Token("PAR_OPEN", self.source[self.position])
+
                 self.position += 1
+
                 return self.next
-            
-            # check for parenthesis
+
             elif self.source[self.position] == ")":
                 self.next = Token("PAR_CLOSE", self.source[self.position])
+
                 self.position += 1
+
                 return self.next
-            
-            
-            # check for space
-            elif self.source[self.position].isdigit():
-                int = ""
-                while self.position < len(self.source) and self.source[self.position].isdigit():
-                    int += self.source[self.position]
-                    self.position += 1
-                self.next = Token("INT", int)
+
+
+            else: #futuramente implementar enum pra verificar se é numero mesmo
+                if self.source[self.position].isdigit():
+                    num+=self.source[self.position]
+                else:
+                    self.next = Token("ERROR", self.source[self.position])
+                    self.position+=1
+                    return self.next
+                
+                if self.position == len(self.source)-1:
+                    token_incomplete = False
+                else:
+                    for i in range(self.position,len(self.source)):
+                        if token_incomplete:
+                            if i != len(self.source) - 1:
+                                if self.source[i+1].isdigit():
+                                    num+=self.source[i+1]
+                                else:
+                                    token_incomplete = False
+                            else:
+                                token_incomplete = False
+                    
+            if token_incomplete == False:
+                self.next = Token("INT", int(num))
+                self.position += len(num)
+                token_incomplete = True
+                num = ""
                 return self.next
-            
-            # check for error
-            else:
-                self.next = Token("ERROR", self.source[self.position])
-                self.position += 1
-                return self.next
-        # if we are at the end of the input, return EOF    
+
         else:
-            self.next = Token("EOF", "EOF")
+            self.next = Token("EOF", "")
             return self.next
 
 # define the Parser class
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
+    
+    @staticmethod
+    def ParseExpression(tokens):
+
+        result = Parser.ParseTerm(tokens)
+
+        # verify if it's plus or minus
+        while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
+                
+                if tokens.next.type == "PLUS":
+                    tokens.selectNext()
+                    result += Parser.ParseTerm(tokens)
+    
+                elif tokens.next.type == "MINUS":
+                    tokens.selectNext()
+                    result -= Parser.ParseTerm(tokens)
+    
+                else:
+                    sys.stderr.write("[ERROR]")
+                    sys.exit()
+            
+        return result
 
     @staticmethod
     # parse multiplication and division
     def ParseTerm(tokens):
 
-        tokens.selectNext()
-        result = 0
+        result = Parser.ParseFactor(tokens)
+             
+        # verify if it's multiplication or division
+        while tokens.next.type == "MULT" or tokens.next.type == "DIV":
 
-        # skip spaces
-        while tokens.next.type == "SPACE":
-            tokens.selectNext()
-
-        # check for error
-        if tokens.next.type == "ERROR":
-            sys.stderr.write('[ERRO]\n')
-            sys.exit()
-
-        # check for integer
-        if tokens.next.type == "INT":
-            result = int(tokens.next.value)
-            tokens.selectNext()
-
-            if tokens.next.type == "INT":
-                sys.stderr.write('[ERRO]\n')
-                sys.exit()
-            else:
-                pass
-            
-            # check for multiplication or division
-            while tokens.next.type == "MULT" or tokens.next.type == "DIV":
-
-                # check for multiplication
-                if tokens.next.type == "MULT":
-                    tokens.selectNext()
-
-                    if tokens.next.type == "INT":
-                        result *= int(tokens.next.value)
-                    else:
-                        sys.stderr.write('[ERRO]\n')
-                        sys.exit()
-                
-                elif tokens.next.type == "DIV":
-                    tokens.selectNext()
-
-                    if tokens.next.type == "INT":
-                        result /= int(tokens.next.value)
-                    else:
-                        sys.stderr.write('[ERRO]\n')
-                        sys.exit()
-
+            if tokens.next.type == "MULT":
                 tokens.selectNext()
+                result *= int(Parser.ParseFactor(tokens))
 
-            return int(result)
+            elif tokens.next.type == "DIV":
+                tokens.selectNext()
+                result //= int(Parser.ParseFactor(tokens))
+
+            else:
+                sys.stderr.write("[ERROR]")
+                sys.exit()
+
+        return result
         
-        else:
-            sys.stderr.write('[ERRO]\n')
-            sys.exit()
-    
-    @staticmethod
-    def parseExpression(tokens):
-        result = Parser.ParseTerm(tokens)
+    def ParseFactor(tokens):
 
-        # skip spaces
-        while tokens.next.type == "SPACE":
+        #verify if the next token is an integer
+        if tokens.next.type == "INT":
+            result = tokens.next.value
             tokens.selectNext()
-
-        while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
+            return result
+        
+        # verify if it's plus or minus
+        elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
-                result += int(Parser.ParseTerm(tokens))
+                tokens.selectNext()
+                return Parser.ParseFactor(tokens)
             elif tokens.next.type == "MINUS":
-                result -= int(Parser.ParseTerm(tokens))
+                tokens.selectNext()
+                return -Parser.ParseFactor(tokens)
         
-        tokens.selectNext()
-        if tokens.next.type == "EOF":
-            return int(result)
-        
-
-
-    @staticmethod
-    def parseFactor(tokens):
-        if tokens.next.type == "PLUS":
-            tokens.selectNext()
-            result = Parser.parseFactor(tokens)
-        
-        elif tokens.next.type == "MINUS":
-            tokens.selectNext()
-            result = -Parser.parseFactor(tokens)
-        
+        # verify open parenthesis
         elif tokens.next.type == "PAR_OPEN":
             tokens.selectNext()
-            result = Parser.parseExpression(tokens)
-            if tokens.next.type != "PAR_CLOSE":
-                sys.stderr.write('[ERRO]\n')
+            result = Parser.ParseExpression(tokens)
+            if tokens.next.type == "PAR_CLOSE":
+                tokens.selectNext()
+                return result
+            else:
+                sys.stderr.write("[ERROR]")
                 sys.exit()
-            tokens.selectNext()
-        
-        elif tokens.next.type == "INT":
-            result = int(tokens.next.value)
-            tokens.selectNext()
-
         else:
-            sys.stderr.write('[ERRO]\n')
+            sys.stderr.write("[ERROR]")
             sys.exit()
-        
-        return result
     
     @staticmethod
     def run(code):
         tokens = Tokenizer(code, None)
-        parsed = Parser.parseExpression(tokens)
+        tokens.selectNext()
+        parsed = Parser.ParseExpression(tokens)
 
-        if parsed is not None:
-            return parsed
+        if tokens.next.type != "EOF":
+            sys.stderr.write('[ERRO]\n')
+            sys.exit()
+
+        return parsed
     
 # define the main function
 def main():
