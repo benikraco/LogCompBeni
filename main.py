@@ -1,14 +1,64 @@
 import sys
 import re
 
-# join all command line arguments with spaces
-input_expression = " ".join(sys.argv[1:])
+# Reads the input file 
+input_expression = sys.argv[1]
+
+with open(input_expression, 'r') as f:
+    arq = f.read()
 
 # define the Token class
 class Token:
     def __init__(self, type, value):
         self.type = type
         self.value = value
+
+class Node:
+    def __init__(self, value, children = []):
+        self.value = value
+        self.children = children
+
+    def evaluate(self):
+        pass
+        
+class BinOp(Node):
+
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        if self.value == '+':
+            return self.children[0].evaluate() + self.children[1].evaluate()
+        elif self.value == '-':
+            return self.children[0].evaluate() - self.children[1].evaluate()
+        elif self.value == '*':
+            return self.children[0].evaluate() * self.children[1].evaluate()
+        elif self.value == '/':
+            return int(self.children[0].evaluate() // self.children[1].evaluate())
+        else:
+            sys.stderr.write('[ERRO]\n')
+            sys.exit()
+
+
+class UnOp(Node):
+
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        if self.value == '-':
+            return -self.children[0].evaluate()
+        elif self.value == '+':
+            return self.children[0].evaluate()
+        
+
+class IntVal(Node):
+
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        return int(self.value)
 
 class PrePro():
     @staticmethod
@@ -26,6 +76,7 @@ class Tokenizer:
         else: 
             self.next = Token(self.next.type, self.next.value)
     
+
     def selectNext(self):
         token_incomplete=True
         num=""
@@ -34,51 +85,37 @@ class Tokenizer:
             self.position+=1
 
         if self.position < len(self.source): #esse é o EOF 
-            
             if self.source[self.position] == "+":
                 self.next = Token("PLUS", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
 
             elif self.source[self.position] == "-":
                 self.next = Token("MINUS", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
 
             elif self.source[self.position] == "*":
                 self.next = Token("MULT", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
             
             elif self.source[self.position] == "/":
                 self.next = Token("DIV", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
 
             elif self.source[self.position] == "(":
                 self.next = Token("PAR_OPEN", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
 
             elif self.source[self.position] == ")":
                 self.next = Token("PAR_CLOSE", self.source[self.position])
-
                 self.position += 1
-
                 return self.next
 
-
-            else: #futuramente implementar enum pra verificar se é numero mesmo
+            else:
                 if self.source[self.position].isdigit():
                     num+=self.source[self.position]
                 else:
@@ -122,19 +159,13 @@ class Parser:
 
         # verify if it's plus or minus
         while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
-                
-                if tokens.next.type == "PLUS":
-                    tokens.selectNext()
-                    result += Parser.ParseTerm(tokens)
-    
-                elif tokens.next.type == "MINUS":
-                    tokens.selectNext()
-                    result -= Parser.ParseTerm(tokens)
-    
-                else:
-                    sys.stderr.write("[ERROR]")
-                    sys.exit()
-            
+            if tokens.next.type == "PLUS":
+                tokens.selectNext()
+                result = BinOp['+', [result, Parser.ParseTerm(tokens)]]
+            elif tokens.next.type == "MINUS":
+                tokens.selectNext()
+                result = BinOp['-', [result, Parser.ParseTerm(tokens)]]
+        
         return result
 
     @staticmethod
@@ -145,15 +176,12 @@ class Parser:
              
         # verify if it's multiplication or division
         while tokens.next.type == "MULT" or tokens.next.type == "DIV":
-
             if tokens.next.type == "MULT":
                 tokens.selectNext()
-                result *= int(Parser.ParseFactor(tokens))
-
+                result = BinOp['*', [result, Parser.ParseFactor(tokens)]]
             elif tokens.next.type == "DIV":
                 tokens.selectNext()
-                result //= int(Parser.ParseFactor(tokens))
-
+                result = BinOp['/', [result, Parser.ParseFactor(tokens)]] 
             else:
                 sys.stderr.write("[ERROR]")
                 sys.exit()
@@ -164,7 +192,8 @@ class Parser:
 
         #verify if the next token is an integer
         if tokens.next.type == "INT":
-            result = tokens.next.value
+            value = tokens.next.value
+            result = IntVal(value, [])
             tokens.selectNext()
             return result
         
@@ -172,10 +201,13 @@ class Parser:
         elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
-                return Parser.ParseFactor(tokens)
+                result = UnOp['+', [Parser.ParseFactor(tokens)]]
+                return result
+            
             elif tokens.next.type == "MINUS":
                 tokens.selectNext()
-                return -Parser.ParseFactor(tokens)
+                result = UnOp['-', [Parser.ParseFactor(tokens)]]
+                return result
         
         # verify open parenthesis
         elif tokens.next.type == "PAR_OPEN":
@@ -205,7 +237,7 @@ class Parser:
     
 # define the main function
 def main():
-    result = (PrePro.filter(input_expression))
+    result = (PrePro.filter(arq))
     res = Parser.run(result)
     print(res)
 
