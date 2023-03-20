@@ -1,11 +1,7 @@
 import sys
 import re
 
-# Reads the input file 
-input_expression = sys.argv[1]
 
-with open(input_expression, 'r') as f:
-    arq = f.read()
 
 # define the Token class
 class Token:
@@ -233,11 +229,18 @@ class Parser:
             sys.stderr.write('[ERRO]\n')
             sys.exit()
 
-        return parsed
+        return parsed.evaluate()
     
 # define the main function
 def main():
-    result = (PrePro.filter(arq))
+
+    # Reads the input file 
+    input_expression = sys.argv[1]
+
+    with open(input_expression, 'r') as f:
+        arq = f.read()
+    
+    result = PrePro.filter(arq)
     res = Parser.run(result)
     print(res)
 
