@@ -161,10 +161,10 @@ class Parser:
         while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
-                result = BinOp['+', [result, Parser.ParseTerm(tokens)]]
+                result = BinOp('+', [result, Parser.ParseTerm(tokens)])
             elif tokens.next.type == "MINUS":
                 tokens.selectNext()
-                result = BinOp['-', [result, Parser.ParseTerm(tokens)]]
+                result = BinOp('-', [result, Parser.ParseTerm(tokens)])
         
         return result
 
@@ -178,10 +178,10 @@ class Parser:
         while tokens.next.type == "MULT" or tokens.next.type == "DIV":
             if tokens.next.type == "MULT":
                 tokens.selectNext()
-                result = BinOp['*', [result, Parser.ParseFactor(tokens)]]
+                result = BinOp('*', [result, Parser.ParseFactor(tokens)])
             elif tokens.next.type == "DIV":
                 tokens.selectNext()
-                result = BinOp['/', [result, Parser.ParseFactor(tokens)]] 
+                result = BinOp('/', [result, Parser.ParseFactor(tokens)])
             else:
                 sys.stderr.write("[ERROR]")
                 sys.exit()
@@ -201,12 +201,12 @@ class Parser:
         elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
-                result = UnOp['+', [Parser.ParseFactor(tokens)]]
+                result = UnOp('+', [Parser.ParseFactor(tokens)])
                 return result
             
             elif tokens.next.type == "MINUS":
                 tokens.selectNext()
-                result = UnOp['-', [Parser.ParseFactor(tokens)]]
+                result = UnOp('-', [Parser.ParseFactor(tokens)])
                 return result
         
         # verify open parenthesis
