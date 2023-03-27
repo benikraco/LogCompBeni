@@ -77,6 +77,7 @@ class Println(Node):
         res = self.children[0].evaluate()
         if res is not None:
             print(res)
+            
 
 class Assign(Node):
     def evaluate(self):
@@ -100,46 +101,31 @@ class Tokenizer:
 
     def selectNext(self):
 
-        while self.position < len(self.source) and self.source[self.position] == " ":
-            self.position+=1
+        while self.position < len(self.source) and self.source[self.position] in (" ", "\t"):
+            self.position += 1
 
-        # Verify if the string is empty
         if self.position >= len(self.source):
             self.next = Token("EOF", None)
             return self.next
 
-        # Verify if the next token is an integer
-        elif self.source[self.position].isdigit():
-            tok = self.source[self.position]
-            contagem = 1
+        if self.source[self.position].isdigit():
+            start = self.position
+            while self.position < len(self.source) and self.source[self.position].isdigit():
+                self.position += 1
+            self.next = Token("INT", int(self.source[start:self.position]))
 
-            while tok.isdigit():
-                contagem += 1
-                if self.position + contagem > len(self.source):
-                    break
-                tok = self.source[self.position: self.position + contagem]
-            
-            self.next = Token("INT", int(self.source[self.position: self.position + contagem - 1]))
-            self.position += contagem - 1
-            
-            return
-        
-        # Verify if the next token is an identifier
-        elif self.source[self.position].isalnum() or self.source[self.position] == "_":
-            tok = self.source[self.position]
-            contagem = 1
+        elif self.source[self.position].isalpha() or self.source[self.position] == "_":
+            start = self.position
+            while self.position < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == "_"):
+                self.position += 1
+            identifier = self.source[start:self.position]
 
-            while self.position + contagem < len(self.source) and (self.source[self.position + contagem].isalnum() or self.source[self.position + contagem] == "_"):
-                contagem += 1
-                tok = self.source[self.position: self.position + contagem]
+            if identifier in reserved:
+                if identifier == "println":
+                    self.next = Token("PRINTLN", identifier)
+            else:
+                self.next = Token("ID", identifier)
 
-            self.next = Token("ID", tok)
-            self.position += contagem
-
-        elif self.next.value in reserved:
-            if self.next.value == "println":
-                self.next = Token("PRINTLN", self.next.value)
-    
         elif self.source[self.position] == "+":
             self.next = Token("PLUS", "+")
             self.position += 1
@@ -151,7 +137,7 @@ class Tokenizer:
         elif self.source[self.position] == "*":
             self.next = Token("MULT", "*")
             self.position += 1
-        
+
         elif self.source[self.position] == "/":
             self.next = Token("DIV", "/")
             self.position += 1
@@ -163,11 +149,11 @@ class Tokenizer:
         elif self.source[self.position] == ")":
             self.next = Token("PAR_CLOSE", ")")
             self.position += 1
-        
+
         elif self.source[self.position] == "=":
             self.next = Token("ASSIGN", "=")
             self.position += 1
-        
+
         elif self.source[self.position] == "\n":
             self.next = Token("NEWLINE", "\n")
             self.position += 1
