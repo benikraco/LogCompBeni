@@ -20,6 +20,9 @@ class Node:
         
 class BinOp(Node):
 
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         if self.value == '+':
             return self.children[0].evaluate() + self.children[1].evaluate()
@@ -36,6 +39,9 @@ class BinOp(Node):
 
 class UnOp(Node):
 
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         if self.value == '-':
             return -self.children[0].evaluate()
@@ -45,14 +51,22 @@ class UnOp(Node):
 
 class IntVal(Node):
 
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         return int(self.value)
     
 class NoOp(Node):
+
+    def __init__ (self, children = []):
+        super().__init__(None, children)
+        
     def evaluate(self):
         return None
 
 class SymbolTable():
+    
 
     tab = {}
     
@@ -69,10 +83,17 @@ class SymbolTable():
         SymbolTable.tab[key] = value
     
 class Identifier(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+
     def evaluate(self):
         return SymbolTable.getter(self.value)
 
 class Println(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         res = self.children[0].evaluate()
         if res is not None:
@@ -80,10 +101,15 @@ class Println(Node):
             
 
 class Assign(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         SymbolTable.setter(self.children[0].value, self.children[1].evaluate())
 
 class Block(Node):
+    def __init__ (self, children = []):
+        super().__init__(None, children)
     def evaluate(self):
         for child in self.children:
             res = child.evaluate()
@@ -114,6 +140,8 @@ class Tokenizer:
                 self.position += 1
             self.next = Token("INT", int(self.source[start:self.position]))
 
+        
+        # 
         elif self.source[self.position].isalpha() or self.source[self.position] == "_":
             start = self.position
             while self.position < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == "_"):
@@ -257,7 +285,6 @@ class Parser:
         if tokens.next.type == "ID":
             id = Identifier(tokens.next.value, [])
             tokens.selectNext()
-
             if tokens.next.type != "ASSIGN":
                 sys.stderr.write("[ERROR - ParseStatement] - Missing assignment")
                 sys.exit()
@@ -288,22 +315,24 @@ class Parser:
                 else:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing close parenthesis")
                     sys.exit()
-        
+
+
+        # verify newline
         elif tokens.next.type == "NEWLINE":
             return NoOp(None)
         
         else:
-            sys.stderr.write("[ERROR - ParseStatement] - Invalid token")
+            sys.stderr.write(f"[ERROR - ParseStatement] - Invalid token: {tokens.next.type}")
             sys.exit()
 
     @staticmethod         
     def ParseBlock(tokens):
         nodes = []
+        nodes.append(Parser.ParseStatement(tokens))
+        tokens.selectNext()
         while tokens.next.type != "EOF":
             nodes.append(Parser.ParseStatement(tokens))
             tokens.selectNext()
-        
-        tokens.selectNext()
         
         return Block(nodes)
 
@@ -335,7 +364,6 @@ def main():
     
     result = PrePro.filter(arq)
     res = Parser.run(result)
-    print(res)
 
 if __name__ == "__main__":
     main()
