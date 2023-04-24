@@ -2,7 +2,7 @@ import sys
 import re
 
 # Define main python reserved words
-reserved_words = ["println", "if", "end", "else", "while", "readln"]
+reserved_words = ["println", "if", "end", "else", "while", "readline"]
 
 
 # define the Token class
@@ -112,7 +112,7 @@ class Println(Node):
         if res is not None:
             print(res)
 
-class Readln(Node):
+class Readline(Node):
     def __init__ (self):
         pass
 
@@ -326,20 +326,17 @@ class Parser:
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
                 res = Parser.ParseFactor(tokens)
-                result = UnOp('+', [res])
-                return result
+                return UnOp('+', [res])
             
             elif tokens.next.type == "MINUS":
                 tokens.selectNext()
                 res = Parser.ParseFactor(tokens)
-                result = UnOp('-', [res])
-                return result
+                return UnOp('-', [res])
 
             elif tokens.next.type == "NOT":
                 tokens.selectNext()
                 res = Parser.ParseFactor(tokens)
-                result = UnOp('!', [res])
-                return result
+                return UnOp('!', [res])
         
         # verify open parenthesis
         elif tokens.next.type == "PAR_OPEN":
@@ -359,13 +356,13 @@ class Parser:
             return Identifier(result, [])
         
         ## IMPLEMENTAR ULTIMA LINHA COM READLN
-        elif tokens.next.type == "readln":
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "readline":
             tokens.selectNext()
             if tokens.next.type == "PAR_OPEN":
                 tokens.selectNext()
                 if tokens.next.type == "PAR_CLOSE":
                     tokens.selectNext()
-                    return Readln()
+                    return Readline()
                 else:
                     sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
                     sys.exit()
@@ -374,7 +371,7 @@ class Parser:
                 sys.exit()
 
         else:
-            sys.stderr.write("[ERROR - ParseFactor] - Invalid token")
+            sys.stderr.write(f"[ERROR - ParseFactor] - Invalid token {tokens.next.type}")
             sys.exit()
 
     def ParseStatement(tokens):
