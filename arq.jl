@@ -1,8 +1,4 @@
-x = 2
-y = 3
+        if 1 == 1
+    println(1)
 
-while x < 10
-    x = x + 1
-    y = y + 1
-    println(x)
 end
