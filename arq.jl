@@ -1,3 +1,8 @@
-_x_ = 27
+x = 2
+y = 3
 
-println(_x_)
+while x < 10
+    x = x + 1
+    y = y + 1
+    println(x)
+end

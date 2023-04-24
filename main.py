@@ -2,7 +2,8 @@ import sys
 import re
 
 # Define main python reserved words
-reserved = ["println"]
+reserved_words = ["println", "if", "end", "else", "while", "readln"]
+
 
 # define the Token class
 class Token:
@@ -32,6 +33,17 @@ class BinOp(Node):
             return self.children[0].evaluate() * self.children[1].evaluate()
         elif self.value == '/':
             return int(self.children[0].evaluate() // self.children[1].evaluate())
+        elif self.value == '==':
+            return self.children[0].evaluate() == self.children[1].evaluate()
+        elif self.value == '>':
+            return self.children[0].evaluate() > self.children[1].evaluate()
+        elif self.value == '<':
+            return self.children[0].evaluate() < self.children[1].evaluate()
+        elif self.value == '&&':
+            return self.children[0].evaluate() and self.children[1].evaluate()
+        elif self.value == '||':
+            return self.children[0].evaluate() or self.children[1].evaluate()
+        
         else:
             sys.stderr.write('[ERROR] Invalid operator\n')
             sys.exit()
@@ -47,6 +59,8 @@ class UnOp(Node):
             return -self.children[0].evaluate()
         elif self.value == '+':
             return self.children[0].evaluate()
+        elif self.value == '!':
+            return not self.children[0].evaluate()
         
 
 class IntVal(Node):
@@ -67,7 +81,6 @@ class NoOp(Node):
 
 class SymbolTable():
     
-
     tab = {}
     
     @staticmethod
@@ -98,6 +111,31 @@ class Println(Node):
         res = self.children[0].evaluate()
         if res is not None:
             print(res)
+
+class Readln(Node):
+    def __init__ (self):
+        pass
+
+    def evaluate(self):
+        return int(input())
+
+class If(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        if self.children[0].evaluate():
+            self.children[1].evaluate()
+        elif len(self.children) > 2:
+            self.children[2].evaluate()
+
+class While(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        while self.children[0].evaluate():
+            self.children[1].evaluate()
             
 
 class Assign(Node):
@@ -108,13 +146,12 @@ class Assign(Node):
         SymbolTable.setter(self.children[0].value, self.children[1].evaluate())
 
 class Block(Node):
-    def __init__ (self, children = []):
-        super().__init__(None, children)
+    def __init__ (self, value, children = []):
+        super().__init__(value, children)
+
     def evaluate(self):
         for child in self.children:
-            res = child.evaluate()
-            if isinstance(child, Println) and res is not None:
-                print(res)
+            child.evaluate()
 
 
 
@@ -140,17 +177,14 @@ class Tokenizer:
                 self.position += 1
             self.next = Token("INT", int(self.source[start:self.position]))
 
-        
-        # 
         elif self.source[self.position].isalpha() or self.source[self.position] == "_":
-            start = self.position
+            identifier = ""
             while self.position < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == "_"):
+                identifier += self.source[self.position]
                 self.position += 1
-            identifier = self.source[start:self.position]
 
-            if identifier in reserved:
-                if identifier == "println":
-                    self.next = Token("PRINTLN", identifier)
+            if identifier in reserved_words:
+                self.next = Token("RESERVED", identifier)
             else:
                 self.next = Token("ID", identifier)
 
@@ -179,8 +213,44 @@ class Tokenizer:
             self.position += 1
 
         elif self.source[self.position] == "=":
-            self.next = Token("ASSIGN", "=")
             self.position += 1
+            if self.source[self.position] == "=":
+                self.next = Token("EQUAL", "==")
+                self.position += 1
+            else:  
+                self.next = Token("ASSIGN", "=")
+                self.position += 1
+        
+        elif self.source[self.position] == "<":
+            self.next = Token("LESS", "<")
+            self.position += 1
+        
+        elif self.source[self.position] == ">":
+            self.next = Token("GREATER", ">")
+            self.position += 1
+        
+        elif self.source[self.position] == "&":
+            self.position += 1
+            if self.source[self.position] == "&":
+                self.next = Token("AND", "&&")
+                self.position += 1
+            else:
+                sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
+                sys.exit()
+        
+        elif self.source[self.position] == "|":
+            self.position += 1
+            if self.source[self.position] == "|":
+                self.next = Token("OR", "||")
+                self.position += 1
+            else:
+                sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
+                sys.exit()
+
+        elif self.source[self.position] == "!":
+            self.next = Token("NOT", "!")
+            self.position += 1
+            
 
         elif self.source[self.position] == "\n":
             self.next = Token("NEWLINE", "\n")
@@ -201,13 +271,16 @@ class Parser:
         result = Parser.ParseTerm(tokens)
 
         # verify if it's plus or minus
-        while tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
+        while tokens.next.type == "PLUS" or tokens.next.type == "MINUS" or tokens.next.type == "OR":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
                 result = BinOp('+', [result, Parser.ParseTerm(tokens)])
             elif tokens.next.type == "MINUS":
                 tokens.selectNext()
                 result = BinOp('-', [result, Parser.ParseTerm(tokens)])
+            elif tokens.next.type == "OR":
+                tokens.selectNext()
+                result = BinOp('||', [result, Parser.ParseTerm(tokens)])
         
         return result
 
@@ -218,7 +291,7 @@ class Parser:
         result = Parser.ParseFactor(tokens)
              
         # verify if it's multiplication or division
-        while tokens.next.type == "MULT" or tokens.next.type == "DIV":
+        while tokens.next.type == "MULT" or tokens.next.type == "DIV" or tokens.next.type == "AND":
 
             if tokens.next.type == "MULT":
                 tokens.selectNext()
@@ -227,6 +300,10 @@ class Parser:
             elif tokens.next.type == "DIV":
                 tokens.selectNext()
                 result = BinOp('/', [result, Parser.ParseFactor(tokens)])
+
+            elif tokens.next.type == "AND":
+                tokens.selectNext()
+                result = BinOp('&&', [result, Parser.ParseFactor(tokens)])
 
             else:
                 sys.stderr.write("[ERROR - ParseTerm] - Invalid token")
@@ -257,11 +334,17 @@ class Parser:
                 res = Parser.ParseFactor(tokens)
                 result = UnOp('-', [res])
                 return result
+
+            elif tokens.next.type == "NOT":
+                tokens.selectNext()
+                res = Parser.ParseFactor(tokens)
+                result = UnOp('!', [res])
+                return result
         
         # verify open parenthesis
         elif tokens.next.type == "PAR_OPEN":
             tokens.selectNext()
-            result = Parser.ParseExpression(tokens)
+            result = Parser.ParseRelExpression(tokens)
             if tokens.next.type == "PAR_CLOSE":
                 tokens.selectNext()
                 return result
@@ -275,6 +358,21 @@ class Parser:
             tokens.selectNext()
             return Identifier(result, [])
         
+        ## IMPLEMENTAR ULTIMA LINHA COM READLN
+        elif tokens.next.type == "readln":
+            tokens.selectNext()
+            if tokens.next.type == "PAR_OPEN":
+                tokens.selectNext()
+                if tokens.next.type == "PAR_CLOSE":
+                    tokens.selectNext()
+                    return Readln()
+                else:
+                    sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
+                    sys.exit()
+            else:
+                sys.stderr.write("[ERROR - ParseFactor] - Missing open parenthesis")
+                sys.exit()
+
         else:
             sys.stderr.write("[ERROR - ParseFactor] - Invalid token")
             sys.exit()
@@ -299,7 +397,7 @@ class Parser:
                 sys.exit()
         
         # verify print
-        elif tokens.next.type == "PRINTLN":
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "println":
             tokens.selectNext()
 
             # verify open parenthesis
@@ -316,25 +414,85 @@ class Parser:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing close parenthesis")
                     sys.exit()
 
+        # verify while
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "while":
+            tokens.selectNext()
+            var = Parser.ParseRelExpression(tokens)
+
+            # verify new line
+            if tokens.next.type == "NEWLINE":
+                tokens.selectNext()
+                blo1 = Block("BLOCK", [])
+                
+                # verify end
+                while tokens.next.value != "end":
+                    blo1.children.append(Parser.ParseStatement(tokens))
+                if tokens.next.type == "RESERVED" and tokens.next.value == "end":
+                    tokens.selectNext()
+                    return While("WHILE", [var, blo1])
+                
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "if":
+            tokens.selectNext()
+            var = Parser.ParseRelExpression(tokens)
+            if tokens.next.type == "NEWLINE":
+                tokens.selectNext()
+                blo1 = Block("BLOCK", [])
+                while tokens.next.value != "end" and tokens.next.value != "else":
+                    blo1.children.append(Parser.ParseStatement(tokens))
+                if tokens.next.type == "RESERVED" and tokens.next.value == "else":
+                    tokens.selectNext()
+                    if tokens.next.type == "NEWLINE":
+                        tokens.selectNext()
+                        else_blo = Block("BLOCK", [])
+                        while tokens.next.value != "end":
+                            else_blo.children.append(Parser.ParseStatement(tokens))
+                        if tokens.next.type == "RESERVED" and tokens.next.value == "end":
+                            tokens.selectNext()
+                            return If("IF", [var, blo1, else_blo])
+                        else:
+                            sys.stderr.write("[ERROR - ParseStatement] - Missing end")
+                            sys.exit()
+
+                elif tokens.next.type == "RESERVED" and tokens.next.value == "end":
+                    tokens.selectNext()
+                    return If("IF", [var, blo1])
+                else:
+                    sys.stderr.write("[ERROR - ParseStatement] - Missing end")
+                    sys.exit()
 
         # verify newline
         elif tokens.next.type == "NEWLINE":
-            return NoOp(None)
+            tokens.selectNext()
+            return NoOp(None)    
         
         else:
             sys.stderr.write(f"[ERROR - ParseStatement] - Invalid token: {tokens.next.type}")
             sys.exit()
 
+    @staticmethod
+    def ParseRelExpression(tokens):
+        result = Parser.ParseExpression(tokens)
+
+        # verify if it's plus or minus
+        while tokens.next.type == "EQUAL" or tokens.next.type == "GREATER" or tokens.next.type == "LESS":
+            if tokens.next.type == "EQUAL":
+                tokens.selectNext()
+                result = BinOp('==', [result, Parser.ParseExpression(tokens)])
+            elif tokens.next.type == "GREATER":
+                tokens.selectNext()
+                result = BinOp('>', [result, Parser.ParseExpression(tokens)])
+            elif tokens.next.type == "LESS":
+                tokens.selectNext()
+                result = BinOp('<', [result, Parser.ParseExpression(tokens)])
+
+        return result
+        
     @staticmethod         
     def ParseBlock(tokens):
-        nodes = []
-        nodes.append(Parser.ParseStatement(tokens))
-        tokens.selectNext()
+        result = Block("BLOCK", [])
         while tokens.next.type != "EOF":
-            nodes.append(Parser.ParseStatement(tokens))
-            tokens.selectNext()
-        
-        return Block(nodes)
+            result.children.append(Parser.ParseStatement(tokens))
+        return result
 
     @staticmethod
     def run(code):
