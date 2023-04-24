@@ -322,7 +322,7 @@ class Parser:
             return result
         
         # verify if it's plus or minus
-        elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS":
+        elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS" or tokens.next.type == "NOT":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
                 res = Parser.ParseFactor(tokens)
