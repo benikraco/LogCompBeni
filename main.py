@@ -3,7 +3,6 @@ import re
 
 # Define main python reserved words
 reserved_words = ["println", "if", "end", "else", "while", "readline", "Int", "String"]
-symbol_table = {}
 
 
 # define the Token class
@@ -211,8 +210,6 @@ class While(Node):
         while self.children[0].evaluate():
             self.children[1].evaluate()
 
-
-
 class Assign(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
@@ -229,13 +226,12 @@ class Block(Node):
             child.evaluate()
 
 
-
 # define the Tokenizer class
 class Tokenizer:
     def __init__(self, source, next):
         self.source = source
         self.position = 0
-        self.next = next
+        self.next = None
 
     def selectNext(self):
 
@@ -280,8 +276,6 @@ class Tokenizer:
                 elif self.next.value == "String":
                     self.next = Token("TYPE", self.next.value)
                 
-
-
         elif self.source[self.position] == "+":
             self.next = Token("PLUS", "+")
             self.position += 1
@@ -307,11 +301,10 @@ class Tokenizer:
             self.position += 1
 
         elif self.source[self.position] == "=":
-            self.position += 1
-            if self.source[self.position] == "=":
+            if self.source[self.position + 1] == "=":
                 self.next = Token("EQUAL", "==")
-                self.position += 1
-            else:  
+                self.position += 2
+            else:
                 self.next = Token("ASSIGN", "=")
                 self.position += 1
         
@@ -362,14 +355,19 @@ class Tokenizer:
             self.next = Token("CONCAT", ".")
             self.position += 1
 
-        elif self.source[self.position] == '"':
-            start_pos = self.position + 1
-            end_pos = self.source.find('"', start_pos)
-            if end_pos == -1:
-                sys.stderr.write('[ERROR - SelectNext] Missing close double quote\n')
+        elif self.source[self.position] == "\"":
+            token = self.source[self.position]
+            i = 1
+            while self.position + i < len(self.source) and self.source[self.position + i] != "\"":
+                i += 1
+                token = self.source[self.position : self.position + i]
+
+            if self.position + i >= len(self.source):
+                sys.stderr.write('[ERROR - SelectNext] String not closed\n')
                 sys.exit()
-            self.next = Token("STRING", self.source[start_pos:end_pos])
-            self.position = end_pos + 1
+
+            self.next = Token("STRING", self.source[self.position + 1 : self.position + i])
+            self.position += i + 1
 
         else:
             sys.stderr.write(f'[ERROR - SelectNext] Invalid token\n {self.source[self.position]}')
@@ -406,7 +404,7 @@ class Parser:
         result = Parser.ParseFactor(tokens)
              
         # verify if it's multiplication or division or and
-        while tokens.next.type == "MULT" or tokens.next.type == "DIV" or tokens.next.type == "AND":
+        while tokens.next.type == "MULT" or tokens.next.type == "DIV" or tokens.next.type == "AND" or tokens.next.type == "CONCAT":
 
             if tokens.next.type == "MULT":
                 tokens.selectNext()
@@ -419,6 +417,10 @@ class Parser:
             elif tokens.next.type == "AND":
                 tokens.selectNext()
                 result = BinOp('&&', [result, Parser.ParseFactor(tokens)])
+
+            elif tokens.next.type == "CONCAT":
+                tokens.selectNext()
+                result = BinOp('.', [result, Parser.ParseFactor(tokens)])
 
             else:
                 sys.stderr.write("[ERROR - ParseTerm] - Invalid token")
@@ -477,7 +479,7 @@ class Parser:
                 sys.exit()
         
         ## IMPLEMENTAR ULTIMA LINHA COM READLN
-        elif tokens.next.type == "RESERVED" and tokens.next.value == "readline":
+        elif tokens.next.type == "READLINE":
             tokens.selectNext()
             if tokens.next.type == "PAR_OPEN":
                 tokens.selectNext()
