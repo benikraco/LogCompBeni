@@ -6,20 +6,21 @@
 
 #### Diagrama sintático
 
-![1677527145466](image/README/1677527145466.png)
+![Diagrama Sintático](image/README/Diagrama Sintático.png)
 
 #### EBNF
 
-```python
-BLOCK = { STATEMENT };
-STATEMENT = ( λ | ASSIGNMENT | PRINT), "\n" ;
-ASSIGNMENT = IDENTIFIER, "=", EXPRESSION ;
-PRINT = "println", "(", EXPRESSION, ")" ;
+STATEMENT = ( λ | ASSIGNMENT | PRINT | WHILE | IF), "\n" ;
+WHILE = "while", "(", RELEXPR, ")", STATEMENT;
+IF = "if", "(", RELEXPR, ")", STATEMENT, {"else", STATEMENT};
 EXPRESSION = TERM, { ("+" | "-"), TERM } ;
-TERM = FACTOR, { ("*" | "/"), FACTOR } ;
-FACTOR = (("+" | "-"), FACTOR) | NUMBER | "(", EXPRESSION, ")" | IDENTIFIER ;
+TERM = FACTOR, { ("*" | "/" | "&&" | "."), FACTOR } ;
+RELEXPR = EXPRESSION, { ("<" | ">" | "==" ), EXPRESSION } ;
+FACTOR = (NUMBER | STRING | IDENTIFIER | ("+" | "-" | "!"), FACTOR) | "(", RELEXPR, ")" | ("readine", "(", ")");
 IDENTIFIER = LETTER, { LETTER | DIGIT | "_" } ;
+ASSIGNMENT = IDENTIFIER,("::", TYPE, ["=",RELEXPR] |"=", RELEXPR );
+TYPE = "Int" | "String";
+PRINT = "println", "(", RELEXPR, ")" ;
 NUMBER = DIGIT, { DIGIT } ;
 LETTER = ( a | ... | z | A | ... | Z ) ;
 DIGIT = ( 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 ) ;
-```

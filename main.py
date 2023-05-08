@@ -2,7 +2,8 @@ import sys
 import re
 
 # Define main python reserved words
-reserved_words = ["println", "if", "end", "else", "while", "readline"]
+reserved_words = ["println", "if", "end", "else", "while", "readline", "Int", "String"]
+symbol_table = {}
 
 
 # define the Token class
@@ -25,28 +26,60 @@ class BinOp(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        if self.value == '+':
-            return self.children[0].evaluate() + self.children[1].evaluate()
-        elif self.value == '-':
-            return self.children[0].evaluate() - self.children[1].evaluate()
-        elif self.value == '*':
-            return self.children[0].evaluate() * self.children[1].evaluate()
-        elif self.value == '/':
-            return int(self.children[0].evaluate() // self.children[1].evaluate())
-        elif self.value == '==':
-            return self.children[0].evaluate() == self.children[1].evaluate()
-        elif self.value == '>':
-            return self.children[0].evaluate() > self.children[1].evaluate()
-        elif self.value == '<':
-            return self.children[0].evaluate() < self.children[1].evaluate()
-        elif self.value == '&&':
-            return self.children[0].evaluate() and self.children[1].evaluate()
-        elif self.value == '||':
-            return self.children[0].evaluate() or self.children[1].evaluate()
+        left_value, left_type = self.children[0].evaluate()
+        right_value, right_type = self.children[1].evaluate()
+
+    
+        if left_type == "Int" and right_type == "Int":
+            if self.value == '+':
+                return (left_value + right_value, "Int")
+            elif self.value == '-':
+                return (left_value - right_value, "Int")
+            elif self.value == '*':
+                return (left_value * right_value, "Int")
+            elif self.value == '/':
+                return (int(left_value // right_value), "Int")
+            elif self.value == '==':
+                return (int(left_value == right_value, "Int"))
+            elif self.value == '>':
+                return (int(left_value > right_value, "Int"))
+            elif self.value == '<':
+                return (int(left_value < right_value, "Int"))
+            elif self.value == '&&':
+                return (left_value and right_value, "Int")
+            elif self.value == '||':
+                return (left_value or right_value, "Int")
+            elif self.value == '.':
+                return (str(left_value) + str(right_value), "String")
+            else:
+                sys.stderr.write('[ERROR] Invalid operator\n')
+                sys.exit()
+            
+        elif left_type == "String" and right_type == "String":
+            if self.value == '.':
+                return (left_value + right_value, "String")
+            elif self.value == '==':
+                return (int(left_value == right_value, "String"))
+            elif self.value == '>':
+                res = str(left_value) > str(right_value)
+                return (int(res), "Int")
+            elif self.value == '<':
+                res = str(left_value) < str(right_value)
+                return (int(res), "Int")
+            else:
+                sys.stderr.write('[ERROR] Invalid operator\n')
+                sys.exit()
         
         else:
-            sys.stderr.write('[ERROR] Invalid operator\n')
-            sys.exit()
+            if self.value == ".":
+                res = str(left_value) + str(right_value)
+                return (str(res), "String")
+            elif self.value == "==":
+                res = str(left_value) == str(right_value)
+                return (int(res), "Int")
+            else:
+                sys.stderr.write('[ERROR] Invalid operator\n')
+                sys.exit()
 
 
 class UnOp(Node):
@@ -55,22 +88,48 @@ class UnOp(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        if self.value == '-':
-            return -self.children[0].evaluate()
-        elif self.value == '+':
-            return self.children[0].evaluate()
-        elif self.value == '!':
-            return not self.children[0].evaluate()
-        
+        value, type = self.children[0].Evaluate()
 
+        if type == 'Int':
+            if self.value == '-':
+                return (-value, 'Int')
+            elif self.value == '!':
+                return (not value, 'Int')
+            else:
+                return (value, 'Int')
+        else:
+            sys.stderr.write('[ERRO] Operador inválido.\n')
+            sys.exit()
+        
 class IntVal(Node):
 
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
     def evaluate(self):
-        return int(self.value)
+        return (int(self.value), "Int")
     
+class StringVal(Node):
+    
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        return (str(self.value), "String")
+    
+class VarDec(Node):
+    
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        id = self.children[0]
+        value = self.children[1]
+
+        if isinstance(value, Node):
+            value = value.evaluate()[0]
+
+        SymbolTable.creator(id.value, value, self.value)
 class NoOp(Node):
 
     def __init__ (self, children = []):
@@ -80,20 +139,34 @@ class NoOp(Node):
         return None
 
 class SymbolTable():
-    
-    tab = {}
+    table = {}
+
+    @staticmethod
+    def creator(key, value, type):
+        if key in SymbolTable.table.keys():
+            sys.stderr.write('[ERRO] A variável já foi declarada.\n')
+            sys.exit()
+        else:
+            SymbolTable.table[key] = (value, type)
     
     @staticmethod
     def getter(key):
-        if key in SymbolTable.tab.keys():
-            return SymbolTable.tab[key]
+        if key in SymbolTable.table.keys():
+            return SymbolTable.table[key]
         else:
-            sys.stderr.write('[ERROR] Variable not declared\n')
+            sys.stderr.write('[ERRO] A variável não foi declarada.\n')
             sys.exit()
     
     @staticmethod
-    def setter(key, value):
-        SymbolTable.tab[key] = value
+    def setter(key, value, type):
+        if key not in SymbolTable.table.keys():
+            sys.stderr.write('[ERRO] A variável não foi declarada.\n')
+            sys.exit()
+        elif type != SymbolTable.table[key][1]:
+            sys.stderr.write('[ERRO] A variável não é do tipo correto.\n')
+            sys.exit()
+        
+        SymbolTable.table[key] = (value, type)
     
 class Identifier(Node):
     def __init__ (self, value,  children = []):
@@ -101,7 +174,8 @@ class Identifier(Node):
 
 
     def evaluate(self):
-        return SymbolTable.getter(self.value)
+        var = SymbolTable.getter(self.value)
+        return (var[0], var[1])
 
 class Println(Node):
     def __init__ (self, value,  children = []):
@@ -117,7 +191,7 @@ class Readline(Node):
         pass
 
     def evaluate(self):
-        return int(input())
+        return (int(input()), "Int")
 
 class If(Node):
     def __init__ (self, value,  children = []):
@@ -136,7 +210,8 @@ class While(Node):
     def evaluate(self):
         while self.children[0].evaluate():
             self.children[1].evaluate()
-            
+
+
 
 class Assign(Node):
     def __init__ (self, value,  children = []):
@@ -178,15 +253,34 @@ class Tokenizer:
             self.next = Token("INT", int(self.source[start:self.position]))
 
         elif self.source[self.position].isalpha() or self.source[self.position] == "_":
-            identifier = ""
-            while self.position < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == "_"):
-                identifier += self.source[self.position]
-                self.position += 1
+            token = self.source[self.position]
+            i = 1
+            while self.position + i < len(self.source) and (self.source[self.position + i].isalnum() or self.source[self.position + i] == "_"):
+                i += 1
+                token = self.source[self.position:self.position + i]
+            
+            self.next = Token("ID", token)
+            self.position += i
 
-            if identifier in reserved_words:
-                self.next = Token("RESERVED", identifier)
-            else:
-                self.next = Token("ID", identifier)
+            if self.next.value in reserved_words:
+                if self.next.value == "if":
+                    self.next = Token("IF", self.next.value)
+                elif self.next.value == "println":
+                       self.next = Token("PRINTLN", self.next.value)
+                elif self.next.value == "else":
+                    self.next = Token("ELSE", self.next.value)
+                elif self.next.value == "while":
+                    self.next = Token("END", self.next.value)
+                elif self.next.value == "end":
+                    self.next = Token("NEWLINE", self.next.value)
+                elif self.next.value == "readline":
+                    self.next = Token("READLINE", self.next.value)
+                elif self.next.value == "Int":
+                    self.next = Token("TYPE", self.next.value)
+                elif self.next.value == "String":
+                    self.next = Token("TYPE", self.next.value)
+                
+
 
         elif self.source[self.position] == "+":
             self.next = Token("PLUS", "+")
@@ -235,7 +329,7 @@ class Tokenizer:
                 self.next = Token("AND", "&&")
                 self.position += 1
             else:
-                sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
+                sys.stderr.write(f'[ERROR - SelectNext] Invalid token\n {self.source[self.position]}')
                 sys.exit()
         
         elif self.source[self.position] == "|":
@@ -244,20 +338,41 @@ class Tokenizer:
                 self.next = Token("OR", "||")
                 self.position += 1
             else:
-                sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
+                sys.stderr.write(f'[ERROR - SelectNext] Invalid token\n {self.source[self.position]}')
                 sys.exit()
 
         elif self.source[self.position] == "!":
             self.next = Token("NOT", "!")
             self.position += 1
-            
-
+        
         elif self.source[self.position] == "\n":
             self.next = Token("NEWLINE", "\n")
             self.position += 1
+        
+        elif self.source[self.position] == ":":
+            self.position += 1
+            if self.source[self.position] == ":":
+                self.next = Token("TYPE_ANNOT", "::")
+                self.position += 1
+            else:
+                sys.stderr.write(f'[ERROR - SelectNext] Invalid token\n {self.source[self.position]}')
+                sys.exit()
+
+        elif self.source[self.position] == ".":
+            self.next = Token("CONCAT", ".")
+            self.position += 1
+
+        elif self.source[self.position] == '"':
+            start_pos = self.position + 1
+            end_pos = self.source.find('"', start_pos)
+            if end_pos == -1:
+                sys.stderr.write('[ERROR - SelectNext] Missing close double quote\n')
+                sys.exit()
+            self.next = Token("STRING", self.source[start_pos:end_pos])
+            self.position = end_pos + 1
 
         else:
-            sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
+            sys.stderr.write(f'[ERROR - SelectNext] Invalid token\n {self.source[self.position]}')
             sys.exit()
 
 # define the Parser class
@@ -290,7 +405,7 @@ class Parser:
 
         result = Parser.ParseFactor(tokens)
              
-        # verify if it's multiplication or division
+        # verify if it's multiplication or division or and
         while tokens.next.type == "MULT" or tokens.next.type == "DIV" or tokens.next.type == "AND":
 
             if tokens.next.type == "MULT":
@@ -320,8 +435,20 @@ class Parser:
             result = IntVal(value, [])
             tokens.selectNext()
             return result
+
+        elif tokens.next.type == "STRING":
+            value = tokens.next.value
+            result = StringVal(value, [])
+            tokens.selectNext()
+            return result
         
-        # verify if it's plus or minus
+        # verify identifier
+        elif tokens.next.type == "ID":
+            result = tokens.next.value
+            tokens.selectNext()
+            return Identifier(result, [])
+        
+        # verify if it's plus or minus or not
         elif tokens.next.type == "PLUS" or tokens.next.type == "MINUS" or tokens.next.type == "NOT":
             if tokens.next.type == "PLUS":
                 tokens.selectNext()
@@ -349,12 +476,6 @@ class Parser:
                 sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
                 sys.exit()
         
-        # verify identifier
-        elif tokens.next.type == "ID":
-            result = tokens.next.value
-            tokens.selectNext()
-            return Identifier(result, [])
-        
         ## IMPLEMENTAR ULTIMA LINHA COM READLN
         elif tokens.next.type == "RESERVED" and tokens.next.value == "readline":
             tokens.selectNext()
@@ -374,92 +495,155 @@ class Parser:
             sys.stderr.write(f"[ERROR - ParseFactor] - Invalid token {tokens.next.type}")
             sys.exit()
 
+    @staticmethod
     def ParseStatement(tokens):
 
         # verify identifier
         if tokens.next.type == "ID":
-            id = Identifier(tokens.next.value, [])
+            ident = Identifier(tokens.next.type, [])
             tokens.selectNext()
-            if tokens.next.type != "ASSIGN":
+
+            if tokens.next.type == "ASSIGN":
+                tokens.selectNext()
+                var = Parser.ParseRelExpression(tokens)
+                result = Assign("=", [ident, var])
+
+            elif tokens.next.type == "TYPE_ANNOT":
+                tokens.selectNext()
+
+                if tokens.next.type == "TYPE":
+                    var_type = tokens.next.value
+                    tokens.selectNext()
+
+                    if tokens.next.type == "ASSIGN":
+                        tokens.selectNext()
+                        var = Parser.ParseRelExpression(tokens)
+                        result = VarDec(var_type, [ident, var])
+
+                    else:
+                        if var_type == "Int":
+                            val = 0
+                        elif var_type == "String":
+                            val = ""
+                        result = VarDec(var_type, [ident, val])
+                        
+                else:
+                    sys.stderr.write("[ERROR - ParseStatement] - Missing type")
+                    sys.exit()
+            else:
                 sys.stderr.write("[ERROR - ParseStatement] - Missing assignment")
                 sys.exit()
-            
-            tokens.selectNext()
-            res = Assign("=", [id, Parser.ParseExpression(tokens)])
 
             if tokens.next.type == "NEWLINE":
-                return res
-            else: 
-                sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                return result
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing end")
                 sys.exit()
+
         
         # verify print
-        elif tokens.next.type == "RESERVED" and tokens.next.value == "println":
+        if tokens.next.type == "PRINTLN":
             tokens.selectNext()
 
             # verify open parenthesis
             if tokens.next.type == "PAR_OPEN":
                 tokens.selectNext()
-                res = Println("PRINTLN", [Parser.ParseExpression(tokens)])
+                result = Println("PRINTLN", [Parser.ParseRelExpression(tokens)])
 
                 # verify close parenthesis
                 if tokens.next.type == "PAR_CLOSE":
                     tokens.selectNext()
-                    return res
+                    if tokens.next.type == "NEWLINE":
+                        return result
 
                 else:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing close parenthesis")
                     sys.exit()
 
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing open parenthesis")
+                sys.exit()
+
         # verify while
-        elif tokens.next.type == "RESERVED" and tokens.next.value == "while":
+        elif tokens.next.type == "WHILE":
             tokens.selectNext()
             var = Parser.ParseRelExpression(tokens)
+
+            children = []
 
             # verify new line
             if tokens.next.type == "NEWLINE":
                 tokens.selectNext()
-                blo1 = Block("BLOCK", [])
-                
-                # verify end
-                while tokens.next.value != "end":
-                    blo1.children.append(Parser.ParseStatement(tokens))
-                if tokens.next.type == "RESERVED" and tokens.next.value == "end":
-                    tokens.selectNext()
-                    return While("WHILE", [var, blo1])
-                
-        elif tokens.next.type == "RESERVED" and tokens.next.value == "if":
-            tokens.selectNext()
-            var = Parser.ParseRelExpression(tokens)
-            if tokens.next.type == "NEWLINE":
-                tokens.selectNext()
-                blo1 = Block("BLOCK", [])
-                while tokens.next.value != "end" and tokens.next.value != "else":
-                    blo1.children.append(Parser.ParseStatement(tokens))
-                if tokens.next.type == "RESERVED" and tokens.next.value == "else":
-                    tokens.selectNext()
-                    if tokens.next.type == "NEWLINE":
-                        tokens.selectNext()
-                        else_blo = Block("BLOCK", [])
-                        while tokens.next.value != "end":
-                            else_blo.children.append(Parser.ParseStatement(tokens))
-                        if tokens.next.type == "RESERVED" and tokens.next.value == "end":
-                            tokens.selectNext()
-                            return If("IF", [var, blo1, else_blo])
-                        else:
-                            sys.stderr.write("[ERROR - ParseStatement] - Missing end")
-                            sys.exit()
 
-                elif tokens.next.type == "RESERVED" and tokens.next.value == "end":
+
+                # verify end
+                while tokens.next.type != "END":
+                    children.append(Parser.ParseStatement(tokens))
                     tokens.selectNext()
-                    return If("IF", [var, blo1])
+
+                while_blo = Block(children)
+
+                if tokens.next.type == "END":
+                    tokens.selectNext()
+                    return While("WHILE", [var, while_blo])
                 else:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing end")
                     sys.exit()
 
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing new line")
+                sys.exit()
+
+        # verify if        
+        elif tokens.next.type == "IF":
+            tokens.selectNext()
+            var = Parser.ParseRelExpression(tokens)
+
+            if tokens.next.type == "NEWLINE":
+                children_if = []
+                tokens.selectNext()
+                
+
+                while tokens.next.type != "END" and tokens.next.type != "ELSE":
+                    children_if.append(Parser.ParseStatement(tokens))
+                    tokens.selectNext()
+
+                block_if = Block(children_if)
+
+                if tokens.next.type == "ELSE":
+                    tokens.selectNext()
+
+                    if tokens.next.type == "NEWLINE":
+                        children_else = []
+                        tokens.selectNext()
+
+                        while tokens.next.type != "END":
+                            children_else.append(Parser.ParseStatement(tokens))
+                            tokens.selectNext()
+                        block_else = Block(children_else)
+
+                        if tokens.next.type == "END":
+                            tokens.selectNext()
+                            return If("IF", [var, block_if, block_else])
+                        
+                        else:
+                            sys.stderr.write("[ERROR - ParseStatement] - Missing end")
+                            sys.exit()
+
+                elif tokens.next.type == "END":
+                    tokens.selectNext()
+                    return If("IF", [var, block_if])
+                
+                else:
+                    sys.stderr.write("[ERROR - ParseStatement] - Missing end")
+                    sys.exit()
+            
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing new line")
+                sys.exit()
+
         # verify newline
         elif tokens.next.type == "NEWLINE":
-            tokens.selectNext()
             return NoOp(None)    
         
         else:
@@ -486,10 +670,14 @@ class Parser:
         
     @staticmethod         
     def ParseBlock(tokens):
-        result = Block("BLOCK", [])
+        nodes = []
+
         while tokens.next.type != "EOF":
-            result.children.append(Parser.ParseStatement(tokens))
-        return result
+            nodes.append(Parser.ParseStatement(tokens))
+            tokens.selectNext()
+        
+        tokens.selectNext()
+        return Block(nodes)
 
     @staticmethod
     def run(code):
@@ -518,7 +706,7 @@ def main():
         arq = f.read()
     
     result = PrePro.filter(arq)
-    res = Parser.run(result)
+    Parser.run(result)
 
 if __name__ == "__main__":
     main()
