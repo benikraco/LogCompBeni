@@ -708,7 +708,8 @@ def main():
         arq = f.read()
     
     result = PrePro.filter(arq)
-    Parser.run(result)
+    parser = Parser(result)
+    parser.run(result)
 
 if __name__ == "__main__":
     main()
