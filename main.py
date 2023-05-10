@@ -62,7 +62,8 @@ class BinOp(Node):
             elif self.value == "||":
                 return (int(l_value or r_value), "Int")
             elif self.value == ".":
-                return (l_value + r_value, "String")
+                return (str(l_value) + str(r_value), "String")
+            
             
         else:
             if self.value == "==":
@@ -264,6 +265,11 @@ class Tokenizer:
                 self.position += 1
             self.position += 1
             self.next = Token("STRING", string)
+
+            # verify if " is missing
+            if self.position >= len(self.source):
+                sys.stderr.write('[ERROR - SelectNext] Missing "')
+                sys.exit()
 
         # verify if it's an identifier
         elif self.position  < len(self.source) and (self.source[self.position].isalnum() or self.source[self.position] == "_"):
