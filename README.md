@@ -18,7 +18,7 @@ TERM = FACTOR, { ("*" | "/" | "&&" | "."), FACTOR } ;
 RELEXPR = EXPRESSION, { ("<" | ">" | "==" ), EXPRESSION } ;
 FACTOR = (NUMBER | STRING | IDENTIFIER | ("+" | "-" | "!"), FACTOR) | "(", RELEXPR, ")" | ("readine", "(", ")");
 IDENTIFIER = LETTER, { LETTER | DIGIT | "_" } ;
-ASSIGNMENT = IDENTIFIER,("::", TYPE, ["=",RELEXPR] |"=", RELEXPR );
+ASSIGNMENT = IDENTIFIER,("::", TYPE, ["=", RELEXPR] |"=", RELEXPR );
 TYPE = "Int" | "String";
 PRINT = "println", "(", RELEXPR, ")" ;
 NUMBER = DIGIT, { DIGIT } ;

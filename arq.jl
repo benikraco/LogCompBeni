@@ -1,4 +1,7 @@
- 
-x_1::Int
-x_1 = 1
-println(x_1)
+
+
+x::String
+x = "a"
+ y::Int
+y = 1
+println(x==y)
