@@ -669,7 +669,6 @@ def main():
     
     result = PrePro.filter(arq)
     res = Parser.run(result)
-    print(res)
 
 if __name__ == "__main__":
     main()
