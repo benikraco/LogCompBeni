@@ -279,10 +279,10 @@ class While(Node):
     def evaluate(self):
         self.id = self.newId()
         Assembler.writeOutput("LOOP_{}:".format(self.id))
-        left = self.children[0].evaluate()
+        self.children[0].evaluate()
         Assembler.writeOutput("CMP EBX, False")
         Assembler.writeOutput("JE EXIT_{}".format(self.id))
-        right = self.children[1].evaluate()
+        self.children[1].evaluate()
         Assembler.writeOutput("JMP LOOP_{}".format(self.id))
         Assembler.writeOutput("EXIT_{}:".format(self.id))
             
@@ -880,7 +880,7 @@ def main():
     
     result = PrePro.filter(arq)
     res = Parser.run(result)
-    Assembler.createOutput()
+    Assembler.createOutput(input_expression)
 
 if __name__ == "__main__":
     main()
