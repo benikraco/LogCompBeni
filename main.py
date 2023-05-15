@@ -37,9 +37,9 @@ class BinOp(Node):
     def evaluate(self):
         self.id = self.newId()
         l_value, l_type = self.children[0].evaluate()
-        Assembler.addOutput("PUSH EBX")
+        Assembler.writeOutput("PUSH EBX")
         r_value, r_type = self.children[1].evaluate()
-        Assembler.addOutput("POP EAX")
+        Assembler.writeOutput("POP EAX")
 
 
         if l_type == "String" and r_type == "String":
@@ -47,64 +47,64 @@ class BinOp(Node):
                 return (str(l_value) + str(r_value), "String")
             
             elif self.value == "==":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_je")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_je")
                 return (int(l_value == r_value), "Int")
             
             elif self.value == ">":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_jg")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_jg")
                 return (int(str(l_value) > str(r_value)), "Int")
             
             elif self.value == "<":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_jl")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_jl")
                 return (int(str(l_value) < str(r_value)), "Int")
             
 
         elif l_type == "Int" and r_type == "Int":
 
             if self.value == "+":
-                Assembler.addOutput("ADD EAX, EBX")
-                Assembler.addOutput("MOV EBX, EAX")
+                Assembler.writeOutput("ADD EAX, EBX")
+                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value + r_value, "Int")
             
             elif self.value == "-":
-                Assembler.addOutput("SUB EAX, EBX")
-                Assembler.addOutput("MOV EBX, EAX")
+                Assembler.writeOutput("SUB EAX, EBX")
+                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value - r_value, "Int")
             
             elif self.value == "*":
-                Assembler.addOutput("IMUL EBX")
-                Assembler.addOutput("MOV EBX, EAX")
+                Assembler.writeOutput("IMUL EBX")
+                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value * r_value, "Int")
             
             elif self.value == "/":
-                Assembler.addOutput("IDIV EBX")
-                Assembler.addOutput("MOV EBX, EAX")
+                Assembler.writeOutput("IDIV EBX")
+                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value // r_value, "Int")
             
             elif self.value == "==":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_je")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_je")
                 return (int(l_value == r_value), "Int")
             
             elif self.value == ">":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_jg")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_jg")
                 return (int(l_value > r_value), "Int")
             
             elif self.value == "<":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_jl")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_jl")
                 return (int(l_value < r_value), "Int")
             
             elif self.value == "&&":
-                Assembler.addOutput("AND EAX, EBX")
+                Assembler.writeOutput("AND EAX, EBX")
                 return (int(l_value and r_value), "Int")
             
             elif self.value == "||":
-                Assembler.addOutput("OR EAX, EBX")
+                Assembler.writeOutput("OR EAX, EBX")
                 return (int(l_value or r_value), "Int")
             
             elif self.value == ".":
@@ -113,8 +113,8 @@ class BinOp(Node):
             
         else:
             if self.value == "==":
-                Assembler.addOutput("CMP EAX, EBX")
-                Assembler.addOutput("CALL binop_je")
+                Assembler.writeOutput("CMP EAX, EBX")
+                Assembler.writeOutput("CALL binop_je")
                 result = str(l_value) == str(r_value)
                 return (int(result), "Int")
             
@@ -140,18 +140,18 @@ class UnOp(Node):
         if value_type[1] == "Int":
 
             if self.value == "+":
-                Assembler.addOutput("ADD EBX, 0")
+                Assembler.writeOutput("ADD EBX, 0")
                 return (value_type[0], "Int")
             
             elif self.value == "-":
-                Assembler.addOutput("MOV EAX, {}".format(value_type[0]))
-                Assembler.addOutput("MOV EBX, -1")
-                Assembler.addOutput("IMUL EBX")
-                Assembler.addOutput("MOV EBX, EAX")
+                Assembler.writeOutput("MOV EAX, {}".format(value_type[0]))
+                Assembler.writeOutput("MOV EBX, -1")
+                Assembler.writeOutput("IMUL EBX")
+                Assembler.writeOutput("MOV EBX, EAX")
                 return (-value_type[0], "Int")
             
             elif self.value == "!":
-                Assembler.addOutput("NEG EBX")
+                Assembler.writeOutput("NEG EBX")
                 return ((not value_type[0]), "Int")
             
             else:
@@ -169,7 +169,7 @@ class IntVal(Node):
 
     def evaluate(self):
         self.id = self.newId()
-        Assembler.addOutput("MOV EBX, {}".format(str(self.value)))
+        Assembler.writeOutput("MOV EBX, {}".format(str(self.value)))
         return (int(self.value), "Int")
 
 
@@ -222,7 +222,7 @@ class Identifier(Node):
 
     def evaluate(self):
         value = SymbolTable.getter(self.value)
-        Assembler.addOutput("MOV EBX, [EBP-{}]".format(value[2]))
+        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(value[2]))
         return (value[0], value[1])
 
 
@@ -231,10 +231,11 @@ class Println(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        print(self.children[0].evaluate()[0])
-        Assembler.addOutput("PUSH EBX")
-        Assembler.addOutput("CALL print")
-        Assembler.addOutput("POP EBX")
+        x = self.children[0].evaluate()[0]
+        Assembler.writeOutput("PUSH EBX")
+        Assembler.writeOutput("CALL print")
+        Assembler.writeOutput("POP EBX")
+        print(x)
 
 
 
@@ -253,21 +254,21 @@ class If(Node):
     def evaluate(self):
         self.id = self.newId()
 
-        Assembler.addOutput("IF_{}:".format(self.id))
-        Assembler.addOutput("CMP EBX, False")
+        Assembler.writeOutput("IF_{}:".format(self.id))
+        Assembler.writeOutput("CMP EBX, False")
 
         if len(self.children) > 2:
-            Assembler.addOutput("JE ELSE_{}".format(self.id))
+            Assembler.writeOutput("JE ELSE_{}".format(self.id))
             self.children[1].evaluate()
-            Assembler.addOutput("JMP EXIT_{}".format(self.id))
-            Assembler.addOutput("ELSE_{}:".format(self.id))
+            Assembler.writeOutput("JMP EXIT_{}".format(self.id))
+            Assembler.writeOutput("ELSE_{}:".format(self.id))
             self.children[2].evaluate()
-            Assembler.addOutput("EXIT_{}:".format(self.id))
+            Assembler.writeOutput("EXIT_{}:".format(self.id))
         else:
-            Assembler.addOutput("JE EXIT_{}".format(self.id))
+            Assembler.writeOutput("JE EXIT_{}".format(self.id))
             self.children[1].evaluate()
-            Assembler.addOutput("JMP EXIT_{}:".format(self.id))
-            Assembler.addOutput("EXIT_{}:".format(self.id))
+            Assembler.writeOutput("JMP EXIT_{}:".format(self.id))
+            Assembler.writeOutput("EXIT_{}:".format(self.id))
 
 
 class While(Node):
@@ -276,12 +277,13 @@ class While(Node):
 
     def evaluate(self):
         self.id = self.newId()
-        Assembler.addOutput("LOOP_{}:".format(self.id))
-        Assembler.addOutput("CMP EBX, False")
-        Assembler.addOutput("JE EXIT_{}".format(self.id))
-        self.children[1].evaluate()
-        Assembler.addOutput("JMP LOOP_{}".format(self.id))
-        Assembler.addOutput("EXIT_{}:".format(self.id))
+        Assembler.writeOutput("LOOP_{}:".format(self.id))
+        left = self.children[0].evaluate()
+        Assembler.writeOutput("CMP EBX, False")
+        Assembler.writeOutput("JE EXIT_{}".format(self.id))
+        right = self.children[1].evaluate()
+        Assembler.writeOutput("JMP LOOP_{}".format(self.id))
+        Assembler.writeOutput("EXIT_{}:".format(self.id))
             
 
 class Assign(Node):
@@ -291,7 +293,7 @@ class Assign(Node):
     def evaluate(self):
         value, type = self.children[1].evaluate()
         SymbolTable.setter(self.children[0].value, value, type)
-        Assembler.addOutput("MOV [EBP-{}], EBX".format(SymbolTable.getter(self.children[0].value)[2]))
+        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.getter(self.children[0].value)[2]))
 
 class VarDec(Node):
     def __init__ (self, value,  children = []):
@@ -303,7 +305,7 @@ class VarDec(Node):
         value = value.evaluate()[0] if isinstance(value, Node) else value
 
         SymbolTable.creator(identifier.value, value, self.value)
-        Assembler.addOutput("PUSH DWORD 0")
+        Assembler.writeOutput("PUSH DWORD 0")
 
 class StringVal(Node):
     def __init__ (self, value,  children = []):
@@ -333,7 +335,7 @@ class Assembler:
             break
 
     @staticmethod
-    def addOutput(string):
+    def writeOutput(string):
         Assembler.str_w += string + "\n"
 
     @staticmethod
