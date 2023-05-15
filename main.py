@@ -47,8 +47,9 @@ class BinOp(Node):
                 return (str(l_value) + str(r_value), "String")
             
             elif self.value == "==":
-                 Assembler.addOutput("CMP EAX, EBX")
-                 return (int(l_value == r_value), "Int")
+                Assembler.addOutput("CMP EAX, EBX")
+                Assembler.addOutput("CALL binop_je")
+                return (int(l_value == r_value), "Int")
             
             elif self.value == ">":
                 Assembler.addOutput("CMP EAX, EBX")
