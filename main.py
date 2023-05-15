@@ -221,8 +221,8 @@ class Identifier(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(SymbolTable.tab[self.value][2]))
         value = SymbolTable.getter(self.value)
+        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(value[2]))
         return (value[0], value[1])
 
 
@@ -279,10 +279,10 @@ class While(Node):
     def evaluate(self):
         self.id = self.newId()
         Assembler.writeOutput("LOOP_{}:".format(self.id))
-        self.children[0].evaluate()
+        left = self.children[0].evaluate()
         Assembler.writeOutput("CMP EBX, False")
         Assembler.writeOutput("JE EXIT_{}".format(self.id))
-        self.children[1].evaluate()
+        right = self.children[1].evaluate()
         Assembler.writeOutput("JMP LOOP_{}".format(self.id))
         Assembler.writeOutput("EXIT_{}:".format(self.id))
             
@@ -294,7 +294,7 @@ class Assign(Node):
     def evaluate(self):
         value, type = self.children[1].evaluate()
         SymbolTable.setter(self.children[0].value, value, type)
-        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.tab[self.children[0].value][2]))
+        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.getter(self.children[0].value)[2]))
 
 class VarDec(Node):
     def __init__ (self, value,  children = []):
