@@ -221,8 +221,8 @@ class Identifier(Node):
         super().__init__(value, children)
 
     def evaluate(self):
+        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(SymbolTable.tab[self.value][2]))
         value = SymbolTable.getter(self.value)
-        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(value[2]))
         return (value[0], value[1])
 
 
@@ -294,7 +294,7 @@ class Assign(Node):
     def evaluate(self):
         value, type = self.children[1].evaluate()
         SymbolTable.setter(self.children[0].value, value, type)
-        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.getter(self.children[0].value)[2]))
+        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.tab[self.children[0].value][2]))
 
 class VarDec(Node):
     def __init__ (self, value,  children = []):
@@ -880,7 +880,7 @@ def main():
     
     result = PrePro.filter(arq)
     res = Parser.run(result)
-    Assembler.createOutput(input_expression)
+    Assembler.createOutput()
 
 if __name__ == "__main__":
     main()
