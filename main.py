@@ -255,6 +255,7 @@ class If(Node):
         self.id = self.newId()
 
         Assembler.writeOutput("IF_{}:".format(self.id))
+        self.children[0].evaluate()
         Assembler.writeOutput("CMP EBX, False")
 
         if len(self.children) > 2:
