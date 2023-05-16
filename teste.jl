@@ -1,11 +1,14 @@
-i::Int
-n::Int
-f::Int
-n = 5
-i = 2
-f = 1
-while i < n + 1
-  f = f * i
-  i = i + 1
-end
-println(f)
+    x::Int
+    x = 3+1
+    if (x > 1)
+      x = 5-1
+    end
+    if (x == 3)
+    
+    else 
+      x = 3
+    end
+    while (x < 5)
+            x = x+1
+    end
+    println(x)

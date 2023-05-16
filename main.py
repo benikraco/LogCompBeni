@@ -268,7 +268,7 @@ class If(Node):
         else:
             Assembler.writeOutput("JE EXIT_{}".format(self.id))
             self.children[1].evaluate()
-            Assembler.writeOutput("JMP EXIT_{}:".format(self.id))
+            Assembler.writeOutput("JMP EXIT_{}".format(self.id))
             Assembler.writeOutput("EXIT_{}:".format(self.id))
 
 
