@@ -231,7 +231,7 @@ class Println(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        x = self.children[0].evaluate()[0]
+        x = self.children[0].evaluate()
         Assembler.writeOutput("PUSH EBX")
         Assembler.writeOutput("CALL print")
         Assembler.writeOutput("POP EBX")
@@ -279,10 +279,10 @@ class While(Node):
     def evaluate(self):
         self.id = self.newId()
         Assembler.writeOutput("LOOP_{}:".format(self.id))
-        left = self.children[0].evaluate()
+        self.children[0].evaluate()
         Assembler.writeOutput("CMP EBX, False")
         Assembler.writeOutput("JE EXIT_{}".format(self.id))
-        right = self.children[1].evaluate()
+        self.children[1].evaluate()
         Assembler.writeOutput("JMP LOOP_{}".format(self.id))
         Assembler.writeOutput("EXIT_{}:".format(self.id))
             
@@ -303,7 +303,7 @@ class VarDec(Node):
     def evaluate(self):
         identifier, value = self.children
 
-        value = value.evaluate()[0] if isinstance(value, Node) else value
+        value = value.evaluate() if isinstance(value, Node) else value
 
         SymbolTable.creator(identifier.value, value, self.value)
         Assembler.writeOutput("PUSH DWORD 0")
