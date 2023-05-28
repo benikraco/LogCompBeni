@@ -2,7 +2,7 @@ import sys
 import re
 
 # Define main python reserved words
-reserved_words = ["println", "if", "end", "else", "while", "readline", "Int", "String"]
+reserved_words = ["println", "if", "end", "else", "while", "readline", "Int", "String", "return", "function"]
 
 
 # define the Token class
@@ -13,10 +13,6 @@ class Token:
 
 
 class Node:
-
-    # 
-    i = 0
-
     def __init__(self, value, children = []):
         self.value = value
         self.children = children
@@ -24,103 +20,57 @@ class Node:
     def evaluate(self):
         pass
 
-    def newId(self):
-        Node.i += 1
-        return Node.i
-
 
 class BinOp(Node):
 
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        self.id = self.newId()
-        l_value, l_type = self.children[0].evaluate()
-        Assembler.writeOutput("PUSH EBX")
-        r_value, r_type = self.children[1].evaluate()
-        Assembler.writeOutput("POP EAX")
+    def evaluate(self, tab):
+        l_value, l_type = self.children[0].evaluate(tab)
+        r_value, r_type = self.children[1].evaluate(tab)
 
 
         if l_type == "String" and r_type == "String":
             if self.value == ".":
                 return (str(l_value) + str(r_value), "String")
-            
             elif self.value == "==":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_je")
-                return (int(l_value == r_value), "Int")
-            
+                 return (int(l_value == r_value), "Int")
             elif self.value == ">":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_jg")
                 return (int(str(l_value) > str(r_value)), "Int")
-            
             elif self.value == "<":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_jl")
                 return (int(str(l_value) < str(r_value)), "Int")
             
 
         elif l_type == "Int" and r_type == "Int":
-
             if self.value == "+":
-                Assembler.writeOutput("ADD EAX, EBX")
-                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value + r_value, "Int")
-            
             elif self.value == "-":
-                Assembler.writeOutput("SUB EAX, EBX")
-                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value - r_value, "Int")
-            
             elif self.value == "*":
-                Assembler.writeOutput("IMUL EBX")
-                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value * r_value, "Int")
-            
             elif self.value == "/":
-                Assembler.writeOutput("IDIV EBX")
-                Assembler.writeOutput("MOV EBX, EAX")
                 return (l_value // r_value, "Int")
-            
             elif self.value == "==":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_je")
                 return (int(l_value == r_value), "Int")
-            
             elif self.value == ">":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_jg")
                 return (int(l_value > r_value), "Int")
-            
             elif self.value == "<":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_jl")
                 return (int(l_value < r_value), "Int")
-            
             elif self.value == "&&":
-                Assembler.writeOutput("AND EAX, EBX")
                 return (int(l_value and r_value), "Int")
-            
             elif self.value == "||":
-                Assembler.writeOutput("OR EAX, EBX")
                 return (int(l_value or r_value), "Int")
-            
             elif self.value == ".":
                 return (str(l_value) + str(r_value), "String")
             
             
         else:
             if self.value == "==":
-                Assembler.writeOutput("CMP EAX, EBX")
-                Assembler.writeOutput("CALL binop_je")
                 result = str(l_value) == str(r_value)
                 return (int(result), "Int")
-            
             elif self.value == ".":
                 return (str(l_value) + str(r_value), "String")
-            
             else:
                 sys.stderr.write('[ERROR] Invalid operator\n')
                 sys.exit()
@@ -131,29 +81,17 @@ class UnOp(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        
-        self.id = self.newId()
+    def evaluate(self, tab):
 
-        value_type = self.children[0].evaluate()
+        value_type = self.children[0].evaluate(tab)
 
         if value_type[1] == "Int":
-
             if self.value == "+":
-                Assembler.writeOutput("ADD EBX, 0")
                 return (value_type[0], "Int")
-            
             elif self.value == "-":
-                Assembler.writeOutput("MOV EAX, {}".format(value_type[0]))
-                Assembler.writeOutput("MOV EBX, -1")
-                Assembler.writeOutput("IMUL EBX")
-                Assembler.writeOutput("MOV EBX, EAX")
                 return (-value_type[0], "Int")
-            
             elif self.value == "!":
-                Assembler.writeOutput("NEG EBX")
                 return ((not value_type[0]), "Int")
-            
             else:
                 sys.stderr.write('[ERROR] Invalid operator\n')
                 sys.exit()
@@ -167,9 +105,7 @@ class IntVal(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        self.id = self.newId()
-        Assembler.writeOutput("MOV EBX, {}".format(str(self.value)))
+    def evaluate(self, tab):
         return (int(self.value), "Int")
 
 
@@ -178,18 +114,19 @@ class NoOp(Node):
     def __init__ (self, children = []):
         super().__init__(None, children)
         
-    def evaluate(self):
+    def evaluate(self, tab):
         return None
 
 
-class SymbolTable(): 
-    tab = {}
-    shift = 0
+class SymbolTable():
 
+    def __init__(self):
+        self.tab = {}
+
+    @staticmethod
     def creator(key, value, type):
-        SymbolTable.shift += 4
         if key not in SymbolTable.tab.keys():
-            SymbolTable.tab[key] = (value, type, SymbolTable.shift)
+            SymbolTable.tab[key] = (value, type)
         else:
             sys.stderr.write('[ERROR] Variable already declared\n')
             sys.exit()
@@ -212,38 +149,46 @@ class SymbolTable():
             sys.stderr.write('[ERROR] Variable type mismatch\n')
             sys.exit()
         
-        SymbolTable.tab[key] = (value, type, SymbolTable.tab[key][2])
-            
-        
+        SymbolTable.tab[key] = (value, type)
+
+class FuncTable():
+    tab = {}
+
+    def creator(key, value):
+        FuncTable.tab[key] = value
+    
+    @staticmethod
+    def getter(key):
+        if key in FuncTable.tab.keys():
+            return FuncTable.tab[key]
+        else:
+            sys.stderr.write('[ERROR] Function not declared\n')
+            sys.exit()
     
 class Identifier(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        value = SymbolTable.getter(self.value)
-        Assembler.writeOutput("MOV EBX, [EBP-{}]".format(value[2]))
-        return (value[0], value[1])
+    def evaluate(self, tab):
+        value, type = SymbolTable.getter(self.value)
+        return (value, type)
 
 
 class Println(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        x = self.children[0].evaluate()
-        Assembler.writeOutput("PUSH EBX")
-        Assembler.writeOutput("CALL print")
-        Assembler.writeOutput("POP EBX")
-        print(x)
-
+    def evaluate(self, tab):
+        res = self.children[0].evaluate(tab)[0]
+        if res is not None:
+            print(res)
 
 
 class Readline(Node):
     def __init__ (self):
         pass
 
-    def evaluate(self):
+    def evaluate(self, tab):
         return (int(input()), "Int")
 
 
@@ -251,191 +196,96 @@ class If(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        self.id = self.newId()
-
-        Assembler.writeOutput("IF_{}:".format(self.id))
-        self.children[0].evaluate()
-        Assembler.writeOutput("CMP EBX, False")
-
-        if len(self.children) > 2:
-            Assembler.writeOutput("JE ELSE_{}".format(self.id))
-            self.children[1].evaluate()
-            Assembler.writeOutput("JMP EXIT_{}".format(self.id))
-            Assembler.writeOutput("ELSE_{}:".format(self.id))
-            self.children[2].evaluate()
-            Assembler.writeOutput("EXIT_{}:".format(self.id))
-        else:
-            Assembler.writeOutput("JE EXIT_{}".format(self.id))
-            self.children[1].evaluate()
-            Assembler.writeOutput("JMP EXIT_{}".format(self.id))
-            Assembler.writeOutput("EXIT_{}:".format(self.id))
+    def evaluate(self, tab):
+        if self.children[0].evaluate(tab)[0]:
+            self.children[1].evaluate(tab)
+        elif len(self.children) > 2:
+            self.children[2].evaluate(tab)
 
 
 class While(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        self.id = self.newId()
-        Assembler.writeOutput("LOOP_{}:".format(self.id))
-        self.children[0].evaluate()
-        Assembler.writeOutput("CMP EBX, False")
-        Assembler.writeOutput("JE EXIT_{}".format(self.id))
-        self.children[1].evaluate()
-        Assembler.writeOutput("JMP LOOP_{}".format(self.id))
-        Assembler.writeOutput("EXIT_{}:".format(self.id))
+    def evaluate(self, tab):
+        while self.children[0].evaluate(tab)[0]:
+            self.children[1].evaluate(tab)
             
 
 class Assign(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        value, type = self.children[1].evaluate()
-        SymbolTable.setter(self.children[0].value, value, type)
-        Assembler.writeOutput("MOV [EBP-{}], EBX".format(SymbolTable.getter(self.children[0].value)[2]))
+    def evaluate(self, tab):
+        value, type = self.children[1].evaluate(tab)
+        tab.setter(self.children[0].value, value, type)
 
 class VarDec(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
+    def evaluate(self, tab):
         identifier, value = self.children
 
-        value = value.evaluate() if isinstance(value, Node) else value
+        value = value.evaluate(tab)[0] if isinstance(value, Node) else value
 
-        SymbolTable.creator(identifier.value, value, self.value)
-        Assembler.writeOutput("PUSH DWORD 0")
+        tab.creator(identifier.value, value, self.value)
 
 class StringVal(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
-        return (str(self.value), "String")       
+    def evaluate(self, tab):
+        return (str(self.value), "String")   
+
+class FuncDec(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self, tab):
+        FuncTable.creator(self.children[0].value, self)
+
+class FunCall(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self, tab):
+        node = FuncTable.getter(self.value)
+        func_st = SymbolTable()
+
+        if len(self.children) != len(node[0].children - 2):
+            sys.stderr.write('[ERROR] Function arguments mismatch\n')
+            sys.exit()
+        
+        for i in range(len(self.children)):
+            x = node.children[i + 1].children[0].value
+            y = self.children[i].evaluate(tab)[0]
+            type = node.children[i + 1].value
+            func_st.creator(x, y, type)
+
+        retorno = node.children[-1].evaluate(func_st)
+
+        if node.value != retorno[1]:
+            sys.stderr.write('[ERROR] Function return type mismatch\n')
+            sys.exit()
+        
+        return retorno
+
+class Retorno(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self, tab):
+        return (self.children[0].evaluate(tab)[0], self.children[0].evaluate(tab)[1])
 
 
 class Block(Node):
     def __init__ (self, value, children = []):
         super().__init__(value, children)
 
-    def evaluate(self):
+    def evaluate(self, tab):
         for child in self.children:
-            child.evaluate()
-
-class Assembler:
-
-    str_w = ""
-    program = ""
-
-    for i in sys.argv[1]:
-        if i != ".":
-            program += i
-        else:
-            break
-
-    @staticmethod
-    def writeOutput(string):
-        Assembler.str_w += string + "\n"
-
-    @staticmethod
-    def createOutput():
-        
-        start = """; constantes
-    SYS_EXIT equ 1
-    SYS_READ equ 3
-    SYS_WRITE equ 4
-    STDIN equ 0
-    STDOUT equ 1
-    True equ 1
-    False equ 0
-
-    segment .data
-
-    segment .bss  ; variaveis
-    res RESB 1
-
-    section .text
-    global _start
-
-    print:  ; subrotina print
-
-    PUSH EBP ; guarda o base pointer
-    MOV EBP, ESP ; estabelece um novo base pointer
-
-    MOV EAX, [EBP+8] ; 1 argumento antes do RET e EBP
-    XOR ESI, ESI
-
-    print_dec: ; empilha todos os digitos
-    MOV EDX, 0
-    MOV EBX, 0x000A
-    DIV EBX
-    ADD EDX, '0'
-    PUSH EDX
-    INC ESI ; contador de digitos
-    CMP EAX, 0
-    JZ print_next ; quando acabar pula
-    JMP print_dec
-
-    print_next:
-    CMP ESI, 0
-    JZ print_exit ; quando acabar de imprimir
-    DEC ESI
-
-    MOV EAX, SYS_WRITE
-    MOV EBX, STDOUT
-
-    POP ECX
-    MOV [res], ECX
-    MOV ECX, res
-
-    MOV EDX, 1
-    INT 0x80
-    JMP print_next
-
-    print_exit:
-    POP EBP
-    RET
-
-    ; subrotinas if/while
-    binop_je:
-    JE binop_true
-    JMP binop_false
-
-    binop_jg:
-    JG binop_true
-    JMP binop_false
-
-    binop_jl:
-    JL binop_true
-    JMP binop_false
-
-    binop_false:
-    MOV EBX, False
-    JMP binop_exit
-    binop_true:
-    MOV EBX, True
-    binop_exit:
-    RET
-
-    _start:
-
-    PUSH EBP ; guarda o base pointer
-    MOV EBP, ESP ; estabelece um novo base pointer
-
-    ; codigo gerado pelo compilador
-
-    """
-        finish = """; interrupcao de saida
-    POP EBP
-    MOV EAX, 1
-    INT 0x80
-    """
-        with open("{}.asm".format(Assembler.program), "w") as file:
-                file.write(start + Assembler.str_w + finish)  
-
-
+            child.evaluate(tab)
 
 # define the Tokenizer class
 class Tokenizer:
@@ -571,6 +421,10 @@ class Tokenizer:
             else:
                 sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
                 sys.exit()
+        
+        elif self.source[self.position] == ",":
+            self.next = Token("COMMA", ",")
+            self.position += 1
 
         else:
             sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
@@ -642,9 +496,33 @@ class Parser:
         
         # verify identifier
         elif tokens.next.type == "ID":
-            result = tokens.next.value
+            nome_func = tokens.next.value
+            res = Identifier(nome_func, [])
             tokens.selectNext()
-            return Identifier(result, [])
+
+            if tokens.next.type == "PAR_OPEN":
+                tokens.selectNext()
+                args = []
+
+                if tokens.next.type != "PAR_CLOSE":
+                    args.append(Parser.ParseRelExpression(tokens))
+                    while tokens.next.type == "COMMA":
+                        tokens.selectNext()
+                        args.append(Parser.ParseRelExpression(tokens))
+
+                if tokens.next.type == "PAR_CLOSE":
+                    tokens.selectNext()
+                    res = FunCall(nome_func, args)
+
+                else:
+                    sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
+                    sys.exit()
+
+                res = FunCall(nome_func, args)
+
+            return res
+        
+
         
         # verify string
         elif tokens.next.type == "STRING":
@@ -695,6 +573,7 @@ class Parser:
                 sys.stderr.write("[ERROR - ParseFactor] - Missing open parenthesis")
                 sys.exit()
 
+
         else:
             sys.stderr.write(f"[ERROR - ParseFactor] - Invalid token {tokens.next.type}")
             sys.exit()
@@ -729,6 +608,24 @@ class Parser:
                     
                 else:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing type")
+                    sys.exit()
+            
+            elif tokens.next.type == "PAR_OPEN":
+                tokens.selectNext()
+                args = []
+
+                if tokens.next.type != "PAR_CLOSE":
+                    args.append(Parser.ParseRelExpression(tokens))
+                    while tokens.next.type == "COMMA":
+                        tokens.selectNext()
+                        args.append(Parser.ParseRelExpression(tokens))
+
+                if tokens.next.type == "PAR_CLOSE":
+                    tokens.selectNext()
+                    return FunCall(id.value, args)
+
+                else:
+                    sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
                     sys.exit()
             
             else:
@@ -815,9 +712,95 @@ class Parser:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing end")
                     sys.exit()
 
+        # verify function
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "function":
+            tokens.selectNext()
+
+            # verify identifier
+            if tokens.next.type == "ID":
+                id = Identifier(tokens.next.value, [])
+                tokens.selectNext()
+
+                # verify open parenthesis
+                if tokens.next.type == "PAR_OPEN":
+                    tokens.selectNext()
+                    args = []
+
+                    if tokens.next.type == "ID":
+                        id = Identifier(tokens.next.value)
+                        tokens.selectNext()
+                        if tokens.next.type == "TYPE_ASSIGN":
+                            tokens.selectNext()
+                            if tokens.next.type == "TYPE":
+                                args.append(VarDec(tokens.next.value, [id, None]))
+                                tokens.selectNext()
+
+                                while tokens.next.type == "COMMA":
+                                    tokens.selectNext()
+                                    if tokens.next.type == "ID":
+                                        id = Identifier(tokens.next.value)
+                                        tokens.selectNext()
+                                        if tokens.next.type == "TYPE_ASSIGN":
+                                            tokens.selectNext()
+                                            if tokens.next.type == "TYPE":
+                                                args.append(VarDec(tokens.next.value, [id, None]))
+                                                tokens.selectNext()
+                                            else:
+                                                sys.stderr.write("[ERROR - ParseStatement] - Missing type")
+                                                sys.exit()
+                                        else:
+                                            sys.stderr.write("[ERROR - ParseStatement] - Missing type assignment")
+                                            sys.exit()
+                                    else:
+                                        sys.stderr.write("[ERROR - ParseStatement] - Missing identifier")
+                                        sys.exit()
+                        
+                        # verify close parenthesis
+                        if tokens.next.type == "PAR_CLOSE":
+                            tokens.selectNext()
+                            if tokens.next.type == "TYPE_ASSIGN":
+                                tokens.selectNext()
+                                if tokens.next.type == "TYPE":
+                                    type = tokens.next.value
+                                    tokens.selectNext()
+
+                                    if tokens.next.type == "NEWLINE":
+                                        tokens.selectNext()
+                                        instructions = []
+
+                                        while tokens.next.value != "end":
+                                            instructions.append(Parser.ParseStatement(tokens))
+                                            tokens.selectNext()
+
+                                        tokens.selectNext()
+                                        list = [id] + args + [Block(instructions)]
+                                        return FuncDec(type, list)
+                                    
+                                    else:
+                                        sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                                        sys.exit()
+                                else:
+                                    sys.stderr.write("[ERROR - ParseStatement] - Missing type")
+                                    sys.exit()
+                            else:
+                                sys.stderr.write("[ERROR - ParseStatement] - Missing type assignment")
+                                sys.exit()
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing identifier")
+                sys.exit()
+        
+        elif tokens.next.type == "RESERVED" and tokens.next.value == "return":
+            tokens.selectNext()
+            ret = Retorno("RETURN", [Parser.ParseRelExpression(tokens)])
+
+            if tokens.next.type == "NEWLINE":
+                return ret
+            else:
+                sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                sys.exit()
+
         # verify newline
         elif tokens.next.type == "NEWLINE":
-            tokens.selectNext()
             return NoOp(None)    
         
         else:
@@ -847,12 +830,17 @@ class Parser:
         result = []
 
         while tokens.next.type != "EOF":
-            result.append(Parser.ParseStatement(tokens))
+            statement = Parser.ParseStatement(tokens)
+            if statement:
+                result.append(statement)
         
+        tokens.selectNext()
         return Block("BLOCK", result)
 
     @staticmethod
     def run(code):
+        tab = SymbolTable()
+
         tokens = Tokenizer(code, None)
         tokens.selectNext()
         parsed = Parser.ParseBlock(tokens)
@@ -862,7 +850,7 @@ class Parser:
             sys.stderr.write("[ERROR - Parser.run()] - Invalid token [EOF]")
             sys.exit()
         
-        return parsed.evaluate()
+        return parsed.evaluate(tab)
 class PrePro():
     @staticmethod
     def filter(text):
@@ -880,7 +868,6 @@ def main():
     
     result = PrePro.filter(arq)
     res = Parser.run(result)
-    Assembler.createOutput()
 
 if __name__ == "__main__":
     main()
