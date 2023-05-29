@@ -26,9 +26,9 @@ class BinOp(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        l_value, l_type = self.children[0].evaluate(tab)
-        r_value, r_type = self.children[1].evaluate(tab)
+    def evaluate(self, TAB):
+        l_value, l_type = self.children[0].evaluate(TAB)
+        r_value, r_type = self.children[1].evaluate(TAB)
 
 
         if l_type == "String" and r_type == "String":
@@ -81,9 +81,9 @@ class UnOp(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
 
-        value_type = self.children[0].evaluate(tab)
+        value_type = self.children[0].evaluate(TAB)
 
         if value_type[1] == "Int":
             if self.value == "+":
@@ -105,7 +105,7 @@ class IntVal(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         return (int(self.value), "Int")
 
 
@@ -114,17 +114,15 @@ class NoOp(Node):
     def __init__ (self, children = []):
         super().__init__(None, children)
         
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         return None
 
 
-class SymbolTable():
+class SymbolTable(): 
+    
+    tab = {}
 
-    def __init__(self):
-        self.tab = {}
-
-    @staticmethod
-    def creator(key, value, type):
+    def creator(self, key, value, type):
         if key not in SymbolTable.tab.keys():
             SymbolTable.tab[key] = (value, type)
         else:
@@ -150,27 +148,15 @@ class SymbolTable():
             sys.exit()
         
         SymbolTable.tab[key] = (value, type)
-
-class FuncTable():
-    tab = {}
-
-    def creator(key, value):
-        FuncTable.tab[key] = value
-    
-    @staticmethod
-    def getter(key):
-        if key in FuncTable.tab.keys():
-            return FuncTable.tab[key]
-        else:
-            sys.stderr.write('[ERROR] Function not declared\n')
-            sys.exit()
+            
+        
     
 class Identifier(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        value, type = SymbolTable.getter(self.value)
+    def evaluate(self, TAB):
+        value, type = TAB.getter(self.value)
         return (value, type)
 
 
@@ -178,8 +164,8 @@ class Println(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        res = self.children[0].evaluate(tab)[0]
+    def evaluate(self, TAB):
+        res = self.children[0].evaluate(TAB)[0]
         if res is not None:
             print(res)
 
@@ -188,7 +174,7 @@ class Readline(Node):
     def __init__ (self):
         pass
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         return (int(input()), "Int")
 
 
@@ -196,96 +182,113 @@ class If(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        if self.children[0].evaluate(tab)[0]:
-            self.children[1].evaluate(tab)
+    def evaluate(self, TAB):
+        if self.children[0].evaluate(TAB)[0]:
+            self.children[1].evaluate(TAB)
         elif len(self.children) > 2:
-            self.children[2].evaluate(tab)
+            self.children[2].evaluate(TAB)
 
 
 class While(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        while self.children[0].evaluate(tab)[0]:
-            self.children[1].evaluate(tab)
+    def evaluate(self, TAB):
+        while self.children[0].evaluate(TAB)[0]:
+            self.children[1].evaluate(TAB)
             
 
 class Assign(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        value, type = self.children[1].evaluate(tab)
-        tab.setter(self.children[0].value, value, type)
+    def evaluate(self, TAB):
+        value, type = self.children[1].evaluate(TAB)
+        TAB.setter(self.children[0].value, value, type)
 
 class VarDec(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         identifier, value = self.children
 
-        value = value.evaluate(tab)[0] if isinstance(value, Node) else value
+        value = value.evaluate(TAB)[0] if isinstance(value, Node) else value
 
-        tab.creator(identifier.value, value, self.value)
+        TAB.creator(identifier.value, value, self.value)
 
 class StringVal(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        return (str(self.value), "String")   
+    def evaluate(self, TAB):
+        return (str(self.value), "String")    
+
+
+class Return(Node):
+    def __init__ (self, value,  children = []):
+        super().__init__(value, children)
+
+    def evaluate(self, TAB):
+        return (self.children[0].evaluate(TAB)[0], self.children[0].evaluate(TAB)[1])
+    
+class FuncTable:
+    
+    table = {}
+
+    @staticmethod
+    def creator(key, value):
+        FuncTable.table[key] = value
+
+    def getter(key):
+        if key in FuncTable.table.keys():
+            return FuncTable.table[key]
+        else:
+            sys.stderr.write('[ERROR] Function not declared\n')
+            sys.exit()
 
 class FuncDec(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         FuncTable.creator(self.children[0].value, self)
 
-class FunCall(Node):
+class FuncCall(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
-        node = FuncTable.getter(self.value)
-        func_st = SymbolTable()
-
-        if len(self.children) != len(node[0].children - 2):
-            sys.stderr.write('[ERROR] Function arguments mismatch\n')
-            sys.exit()
+    def evaluate(self, TAB):
+        func = FuncTable.getter(self.value)
+        table = SymbolTable()
         
+        if len(self.children) != (len(func.children) - 2):
+            sys.stderr.write('[ERROR] Invalid number of arguments\n')
+            sys.exit()
+
         for i in range(len(self.children)):
-            x = node.children[i + 1].children[0].value
-            y = self.children[i].evaluate(tab)[0]
-            type = node.children[i + 1].value
-            func_st.creator(x, y, type)
+            x = func.children[i+1].children[0].value
+            y = self.children[i].evaluate(TAB)[0]
+            z = func.children[i+1].value
+            table.creator(x, y, z)
 
-        retorno = node.children[-1].evaluate(func_st)
+        ret = func.children[-1].evaluate(table)
 
-        if node.value != retorno[1]:
-            sys.stderr.write('[ERROR] Function return type mismatch\n')
+        if func.value != ret[1]:
+            sys.stderr.write('[ERROR] Return type mismatch\n')
             sys.exit()
         
-        return retorno
-
-class Retorno(Node):
-    def __init__ (self, value,  children = []):
-        super().__init__(value, children)
-
-    def evaluate(self, tab):
-        return (self.children[0].evaluate(tab)[0], self.children[0].evaluate(tab)[1])
-
+        return ret
 
 class Block(Node):
     def __init__ (self, value, children = []):
         super().__init__(value, children)
 
-    def evaluate(self, tab):
+    def evaluate(self, TAB):
         for child in self.children:
-            child.evaluate(tab)
+            result = child.evaluate(TAB)
+            if isinstance(child, Return):
+                return result
 
 # define the Tokenizer class
 class Tokenizer:
@@ -421,7 +424,7 @@ class Tokenizer:
             else:
                 sys.stderr.write('[ERROR - SelectNext] Invalid token\n')
                 sys.exit()
-        
+
         elif self.source[self.position] == ",":
             self.next = Token("COMMA", ",")
             self.position += 1
@@ -496,33 +499,31 @@ class Parser:
         
         # verify identifier
         elif tokens.next.type == "ID":
-            nome_func = tokens.next.value
-            res = Identifier(nome_func, [])
+            name = tokens.next.value
+            res = Identifier(name, [])
             tokens.selectNext()
 
             if tokens.next.type == "PAR_OPEN":
-                tokens.selectNext()
                 args = []
+                tokens.selectNext()
 
                 if tokens.next.type != "PAR_CLOSE":
                     args.append(Parser.ParseRelExpression(tokens))
                     while tokens.next.type == "COMMA":
                         tokens.selectNext()
                         args.append(Parser.ParseRelExpression(tokens))
-
+                
                 if tokens.next.type == "PAR_CLOSE":
                     tokens.selectNext()
-                    res = FunCall(nome_func, args)
+                    res = FuncCall(name, args)
 
                 else:
                     sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
                     sys.exit()
-
-                res = FunCall(nome_func, args)
-
+                
+                res = FuncCall(name, args)
+            
             return res
-        
-
         
         # verify string
         elif tokens.next.type == "STRING":
@@ -573,7 +574,6 @@ class Parser:
                 sys.stderr.write("[ERROR - ParseFactor] - Missing open parenthesis")
                 sys.exit()
 
-
         else:
             sys.stderr.write(f"[ERROR - ParseFactor] - Invalid token {tokens.next.type}")
             sys.exit()
@@ -598,7 +598,7 @@ class Parser:
 
                     if tokens.next.type == "ASSIGN":
                         tokens.selectNext()
-                        return VarDec(type, [id, Parser.ParseRelExpression(tokens)])
+                        res = VarDec(type, [id, Parser.ParseRelExpression(tokens)])
                     else:
                         if type == "Int":
                             val = 0
@@ -619,17 +619,16 @@ class Parser:
                     while tokens.next.type == "COMMA":
                         tokens.selectNext()
                         args.append(Parser.ParseRelExpression(tokens))
-
+                
                 if tokens.next.type == "PAR_CLOSE":
+                    res = FuncCall(id.value, args)
                     tokens.selectNext()
-                    return FunCall(id.value, args)
-
                 else:
-                    sys.stderr.write("[ERROR - ParseFactor] - Missing close parenthesis")
+                    sys.stderr.write("[ERROR - ParseStatement] - Missing close parenthesis")
                     sys.exit()
             
             else:
-                sys.stderr.write("[ERROR - ParseStatement] - Missing type assignment")
+                sys.stderr.write("[ERROR - ParseStatement] - Missing assign or open parenthesis")
                 sys.exit()
 
             if tokens.next.type == "NEWLINE":
@@ -712,16 +711,19 @@ class Parser:
                     sys.stderr.write("[ERROR - ParseStatement] - Missing end")
                     sys.exit()
 
+        # verify newline
+        elif tokens.next.type == "NEWLINE":
+            tokens.selectNext()
+            return NoOp(None)    
+        
         # verify function
         elif tokens.next.type == "RESERVED" and tokens.next.value == "function":
             tokens.selectNext()
 
-            # verify identifier
             if tokens.next.type == "ID":
-                id = Identifier(tokens.next.value, [])
+                name = Identifier(tokens.next.value)
                 tokens.selectNext()
 
-                # verify open parenthesis
                 if tokens.next.type == "PAR_OPEN":
                     tokens.selectNext()
                     args = []
@@ -732,7 +734,8 @@ class Parser:
                         if tokens.next.type == "TYPE_ASSIGN":
                             tokens.selectNext()
                             if tokens.next.type == "TYPE":
-                                args.append(VarDec(tokens.next.value, [id, None]))
+                                type = tokens.next.value
+                                args.append(VarDec(type, [id, None]))
                                 tokens.selectNext()
 
                                 while tokens.next.type == "COMMA":
@@ -749,59 +752,61 @@ class Parser:
                                                 sys.stderr.write("[ERROR - ParseStatement] - Missing type")
                                                 sys.exit()
                                         else:
-                                            sys.stderr.write("[ERROR - ParseStatement] - Missing type assignment")
+                                            sys.stderr.write("[ERROR - ParseStatement] - Missing type assign")
                                             sys.exit()
                                     else:
-                                        sys.stderr.write("[ERROR - ParseStatement] - Missing identifier")
+                                        sys.stderr.write("[ERROR - ParseStatement] - Missing id")
                                         sys.exit()
-                        
-                        # verify close parenthesis
-                        if tokens.next.type == "PAR_CLOSE":
+                    
+                    if tokens.next.type == "PAR_CLOSE":
+                        tokens.selectNext()
+                        if tokens.next.type == "TYPE_ASSIGN":
                             tokens.selectNext()
-                            if tokens.next.type == "TYPE_ASSIGN":
+                            if tokens.next.type == "TYPE":
+                                type = tokens.next.value
                                 tokens.selectNext()
-                                if tokens.next.type == "TYPE":
-                                    type = tokens.next.value
+
+                                if tokens.next.type == "NEWLINE":
                                     tokens.selectNext()
+                                    instru = []
 
-                                    if tokens.next.type == "NEWLINE":
+                                    while tokens.next.value != "end":
+                                        instru.append(Parser.ParseStatement(tokens))
                                         tokens.selectNext()
-                                        instructions = []
-
-                                        while tokens.next.value != "end":
-                                            instructions.append(Parser.ParseStatement(tokens))
-                                            tokens.selectNext()
-
-                                        tokens.selectNext()
-                                        list = [id] + args + [Block(instructions)]
-                                        return FuncDec(type, list)
                                     
-                                    else:
-                                        sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
-                                        sys.exit()
+                                    tokens.selectNext()
+                                    lista = [name] + args + [Block(instru)]
+                                    return FuncDec(type, lista)
+                                
                                 else:
-                                    sys.stderr.write("[ERROR - ParseStatement] - Missing type")
+                                    sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
                                     sys.exit()
+
                             else:
-                                sys.stderr.write("[ERROR - ParseStatement] - Missing type assignment")
+                                sys.stderr.write("[ERROR - ParseStatement] - Missing type")
                                 sys.exit()
+                        
+                        else:
+                            sys.stderr.write("[ERROR - ParseStatement] - Missing type assign")
+                            sys.exit()
+            
             else:
-                sys.stderr.write("[ERROR - ParseStatement] - Missing identifier")
+                sys.stderr.write("[ERROR - ParseStatement] - Missing id")
                 sys.exit()
         
+        # verify return
         elif tokens.next.type == "RESERVED" and tokens.next.value == "return":
             tokens.selectNext()
-            ret = Retorno("RETURN", [Parser.ParseRelExpression(tokens)])
+            
+            node = Return("RETURN", [Parser.ParseRelExpression(tokens)])
 
             if tokens.next.type == "NEWLINE":
-                return ret
+                return node
+
             else:
                 sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
                 sys.exit()
 
-        # verify newline
-        elif tokens.next.type == "NEWLINE":
-            return NoOp(None)    
         
         else:
             sys.stderr.write(f"[ERROR - ParseStatement] - Invalid token: {tokens.next.type}")
@@ -830,17 +835,12 @@ class Parser:
         result = []
 
         while tokens.next.type != "EOF":
-            statement = Parser.ParseStatement(tokens)
-            if statement:
-                result.append(statement)
+            result.append(Parser.ParseStatement(tokens))
         
-        tokens.selectNext()
         return Block("BLOCK", result)
 
     @staticmethod
     def run(code):
-        tab = SymbolTable()
-
         tokens = Tokenizer(code, None)
         tokens.selectNext()
         parsed = Parser.ParseBlock(tokens)
@@ -849,8 +849,10 @@ class Parser:
         if tokens.next.type != "EOF":
             sys.stderr.write("[ERROR - Parser.run()] - Invalid token [EOF]")
             sys.exit()
+
+        TAB = SymbolTable()
         
-        return parsed.evaluate(tab)
+        return parsed.evaluate(TAB)
 class PrePro():
     @staticmethod
     def filter(text):

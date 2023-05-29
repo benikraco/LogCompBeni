@@ -1,14 +1,25 @@
-    x::Int
-    x = 3+1
-    if (x > 1)
-      x = 5-1
-    end
-    if (x == 3)
+
+# v2.3 testing
+x_1::Int
+x_1 = 2
+
+x_1 = readline()
+if ((x_1 > 1) && !(x_1 < 1)) 
+    x_1 = 3
+else 
     
-    else 
-      x = 3
-    end
-    while (x < 5)
-            x = x+1
-    end
-    println(x)
+    x_1 = (-20+30)*4*3/40 # teste de comentario
+    
+end
+println(x_1)
+x_1 = readline()
+if ((x_1 > 1) && !(x_1 < 1))
+    x_1 = 3
+else
+    x_1 = (-20+30)*12/40
+end
+println(x_1)
+while ((x_1 > 1) || (x_1 == 1)) 
+    x_1 = x_1 - 1
+    println(x_1)
+end
