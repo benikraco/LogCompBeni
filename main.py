@@ -231,7 +231,7 @@ class Return(Node):
         super().__init__(value, children)
 
     def evaluate(self, TAB):
-        return (self.children[0].evaluate(TAB)[0], "Int")
+        return self.children[0].evaluate(TAB)
     
 class FuncTable:
     
@@ -767,13 +767,10 @@ class Parser:
                                     instru = []
 
                                     while tokens.next.value != "end":
-
                                         instru.append(Parser.ParseStatement(tokens))
-                                        tokens.selectNext()
                                     
                                     tokens.selectNext()
                                     lista = [name] + args + [Block("BLOCK",instru)]
-                                    
                                     return FuncDec(type, lista)
                                 
                                 else:
@@ -797,6 +794,7 @@ class Parser:
             tokens.selectNext()
             
             node = Return("RETURN", [Parser.ParseRelExpression(tokens)])
+            
 
             if tokens.next.type == "NEWLINE":
                 return node
