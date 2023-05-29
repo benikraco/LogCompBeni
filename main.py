@@ -115,7 +115,7 @@ class NoOp(Node):
         super().__init__(None, children)
         
     def evaluate(self, TAB):
-        return None
+        return (None)
 
 
 class SymbolTable(): 
@@ -150,7 +150,6 @@ class SymbolTable():
         SymbolTable.tab[key] = (value, type)
             
         
-    
 class Identifier(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
@@ -202,7 +201,9 @@ class Assign(Node):
     def __init__ (self, value,  children = []):
         super().__init__(value, children)
 
-    def evaluate(self, TAB):
+    def evaluate(self, TAB): 
+        ##breakpoint()
+
         value, type = self.children[1].evaluate(TAB)
         TAB.setter(self.children[0].value, value, type)
 
@@ -230,7 +231,7 @@ class Return(Node):
         super().__init__(value, children)
 
     def evaluate(self, TAB):
-        return (self.children[0].evaluate(TAB)[0], self.children[0].evaluate(TAB)[1])
+        return (self.children[0].evaluate(TAB)[0], "Int")
     
 class FuncTable:
     
@@ -272,13 +273,8 @@ class FuncCall(Node):
             z = func.children[i+1].value
             table.creator(x, y, z)
 
-        ret = func.children[-1].evaluate(table)
-
-        if func.value != ret[1]:
-            sys.stderr.write('[ERROR] Return type mismatch\n')
-            sys.exit()
-        
-        return ret
+        ##breakpoint()
+        return func.children[-1].evaluate(table)
 
 class Block(Node):
     def __init__ (self, value, children = []):
@@ -286,9 +282,9 @@ class Block(Node):
 
     def evaluate(self, TAB):
         for child in self.children:
-            result = child.evaluate(TAB)
             if isinstance(child, Return):
-                return result
+                return child.evaluate(TAB)
+            child.evaluate(TAB)
 
 # define the Tokenizer class
 class Tokenizer:
@@ -634,7 +630,7 @@ class Parser:
             if tokens.next.type == "NEWLINE":
                 return res
             else: 
-                sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                sys.stderr.write("[ERROR - ParseStatement] - Missing newline - 3")
                 sys.exit()
         
         # verify print
@@ -771,15 +767,17 @@ class Parser:
                                     instru = []
 
                                     while tokens.next.value != "end":
+
                                         instru.append(Parser.ParseStatement(tokens))
                                         tokens.selectNext()
                                     
                                     tokens.selectNext()
-                                    lista = [name] + args + [Block(instru)]
+                                    lista = [name] + args + [Block("BLOCK",instru)]
+                                    
                                     return FuncDec(type, lista)
                                 
                                 else:
-                                    sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                                    sys.stderr.write("[ERROR - ParseStatement] - Missing newline - 1")
                                     sys.exit()
 
                             else:
@@ -804,12 +802,12 @@ class Parser:
                 return node
 
             else:
-                sys.stderr.write("[ERROR - ParseStatement] - Missing newline")
+                sys.stderr.write("[ERROR - ParseStatement] - Missing newline - 2")
                 sys.exit()
 
         
         else:
-            sys.stderr.write(f"[ERROR - ParseStatement] - Invalid token: {tokens.next.type}")
+            sys.stderr.write(f"[ERROR - ParseStatement] - Invalid token: {tokens.next.type}: {tokens.next.value}")
             sys.exit()
 
     @staticmethod
@@ -873,3 +871,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
